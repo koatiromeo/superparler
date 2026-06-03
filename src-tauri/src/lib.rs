@@ -1,4 +1,5 @@
 use tauri::Manager;
+use tauri_plugin_autostart::ManagerExt;
 use tracing_subscriber::EnvFilter;
 
 pub mod audio;
@@ -36,8 +37,23 @@ pub fn run() {
             let state = AppState::new(config.clone());
             app.manage(state);
 
-            // Setup system tray
-            tray::setup_tray(app)?;
+            // Setup system tray (pass config for hotkey + engine display)
+            tray::setup_tray(app, &config)?;
+
+            // Sync autostart with config (keeps OS state and config in sync on restart)
+            {
+                let autostart = app.autolaunch();
+                let synced = autostart.is_enabled().unwrap_or(false);
+                if config.launch_at_startup != synced {
+                    if config.launch_at_startup {
+                        if let Err(e) = autostart.enable() {
+                            tracing::warn!("autostart enable failed: {e}");
+                        }
+                    } else if let Err(e) = autostart.disable() {
+                        tracing::warn!("autostart disable failed: {e}");
+                    }
+                }
+            }
 
             // Register hotkey from config
             {
