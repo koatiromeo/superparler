@@ -4,7 +4,6 @@ use crate::{
     error::Result,
     pipeline,
     state::{AppState, RecordingState},
-    storage::models::Transcription,
 };
 
 #[tauri::command]

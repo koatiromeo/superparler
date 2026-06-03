@@ -1,9 +1,9 @@
 /// pipeline.rs — single orchestration point for dictation.
 /// Flow: capture → resample → VAD → STT → enhance? → inject → persist → emit
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter};
 
 use crate::{
-    audio::{capture::AudioRecorder, resample, vad},
+    audio::{capture::AudioRecorder, vad},
     enhance,
     error::{AppError, Result},
     events::{self, RecordingErrorPayload, RecordingResultPayload},
@@ -15,35 +15,28 @@ use crate::{
 
 /// Begin audio capture. Emits "recording:started".
 pub async fn start_recording(state: &AppState, app: &AppHandle) -> Result<()> {
-    let mut guard = state.lock().await;
-
-    if guard.recording_state != RecordingState::Idle {
-        return Err(AppError::AlreadyRecording);
+    {
+        let mut guard = state.lock().await;
+        if guard.recording_state != RecordingState::Idle {
+            return Err(AppError::AlreadyRecording);
+        }
+        guard.recording_state = RecordingState::Recording;
     }
 
-    // Start the audio stream in a blocking thread; store samples in state
-    // AudioRecorder::start() is sync (cpal), wrap in spawn_blocking
-    let recorder = tokio::task::spawn_blocking(AudioRecorder::start)
-        .await
-        .map_err(|e| AppError::AudioStream(format!("spawn_blocking: {e}")))??;
-
-    guard.recording_state = RecordingState::Recording;
-
-    // Store recorder handle — we need it on stop
-    // We serialize by storing samples in state instead of the recorder
-    // The recorder is moved into a background task that drains on stop signal
-    drop(guard);
+    // AudioRecorder::start() opens the cpal stream (fast, not CPU-bound).
+    // It is now Send because the !Send cpal::Stream lives inside a std::thread.
+    let recorder = AudioRecorder::start()?;
 
     // Notify frontend and update tray
     app.emit(events::EVT_RECORDING_STARTED, ())
         .map_err(|e| AppError::Emit(e.to_string()))?;
     tray::update_tray_state(app, &RecordingState::Recording);
 
-    // Spawn background task to hold the recorder until stop is called
+    // Background tokio task: poll state for stop signal, then resample + transcribe.
     let state_clone = state.clone();
     let app_clone = app.clone();
     tokio::spawn(async move {
-        // Wait for recording state to change (stop signal)
+        // Poll until state transitions away from Recording (stop signal from stop_recording())
         loop {
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             let guard = state_clone.lock().await;
@@ -52,31 +45,24 @@ pub async fn start_recording(state: &AppState, app: &AppHandle) -> Result<()> {
             }
         }
 
-        // Stop the recorder and get samples
+        // recorder.stop() blocks the std thread doing resampling (~100 ms).
+        // Use spawn_blocking so we don't block the tokio runtime thread.
+        // AudioRecorder is Send so this is safe.
         let result = tokio::task::spawn_blocking(move || recorder.stop())
             .await
-            .map_err(|e| AppError::AudioStream(e.to_string()));
+            .map_err(|e| AppError::AudioStream(format!("join error: {e}")));
 
         match result {
-            Ok(Ok((samples, source_rate, channels))) => {
+            Ok(Ok(samples)) => {
                 let mut guard = state_clone.lock().await;
-                // Store resampled samples
-                match resample::to_16khz_mono(&samples, source_rate, channels) {
-                    Ok(mono) => guard.audio_samples = Some(mono),
-                    Err(e) => {
-                        tracing::error!("resample failed: {e}");
-                        guard.audio_samples = None;
-                    }
-                }
+                guard.audio_samples = Some(samples);
             }
             Ok(Err(e)) => tracing::error!("recorder.stop() failed: {e}"),
-            Err(e) => tracing::error!("spawn_blocking join failed: {e}"),
+            Err(e) => tracing::error!("spawn_blocking join error: {e}"),
         }
 
-        // Trigger transcription
-        let state_for_transcribe = state_clone.clone();
-        let app_for_transcribe = app_clone.clone();
-        if let Err(e) = run_transcription(&state_for_transcribe, &app_for_transcribe).await {
+        // Run STT → enhance → inject → persist
+        if let Err(e) = run_transcription(&state_clone, &app_clone).await {
             tracing::error!("transcription pipeline failed: {e}");
             let _ = app_clone.emit(
                 events::EVT_RECORDING_ERROR,
@@ -88,14 +74,15 @@ pub async fn start_recording(state: &AppState, app: &AppHandle) -> Result<()> {
     Ok(())
 }
 
-/// Signal stop and begin transcription. Emits "recording:stopped" then "recording:transcribing".
+/// Signal stop (transitions state to Transcribing; background task detects this and calls stop()).
 pub async fn stop_recording(state: &AppState, app: &AppHandle) -> Result<()> {
-    let mut guard = state.lock().await;
-    if guard.recording_state != RecordingState::Recording {
-        return Err(AppError::NotRecording);
+    {
+        let mut guard = state.lock().await;
+        if guard.recording_state != RecordingState::Recording {
+            return Err(AppError::NotRecording);
+        }
+        guard.recording_state = RecordingState::Transcribing;
     }
-    guard.recording_state = RecordingState::Transcribing;
-    drop(guard);
 
     app.emit(events::EVT_RECORDING_STOPPED, ())
         .map_err(|e| AppError::Emit(e.to_string()))?;
@@ -106,49 +93,39 @@ pub async fn stop_recording(state: &AppState, app: &AppHandle) -> Result<()> {
     Ok(())
 }
 
-/// Run STT → enhance → inject → persist → emit result. Called after samples are ready.
+/// VAD → STT → enhance → inject → persist → emit result.
 async fn run_transcription(state: &AppState, app: &AppHandle) -> Result<()> {
     let (samples, config) = {
         let guard = state.lock().await;
-        let samples = guard
-            .audio_samples
-            .clone()
-            .ok_or(AppError::NotRecording)?;
+        let samples = guard.audio_samples.clone().ok_or(AppError::NotRecording)?;
         (samples, guard.config.clone())
     };
 
-    // VAD trim silence
+    // VAD: trim leading/trailing silence
     let trimmed = vad::trim_silence(&samples)?;
     if trimmed.is_empty() {
         tracing::warn!("VAD: no speech detected, skipping transcription");
-        let mut guard = state.lock().await;
-        guard.recording_state = RecordingState::Idle;
-        guard.audio_samples = None;
-        tray::update_tray_state(app, &RecordingState::Idle);
+        reset_state(state, app).await;
         return Ok(());
     }
 
-    // Build transcriber and run
+    // STT
     let transcriber = crate::stt::factory::build_transcriber(&config)?;
     let text = transcriber.transcribe(&trimmed, &config.language).await?;
-
     if text.is_empty() {
         tracing::warn!("transcription returned empty text");
-        let mut guard = state.lock().await;
-        guard.recording_state = RecordingState::Idle;
-        guard.audio_samples = None;
-        tray::update_tray_state(app, &RecordingState::Idle);
+        reset_state(state, app).await;
         return Ok(());
     }
 
-    // Optional enhancement
+    // Optional LLM enhancement
     let enhancer = enhance::build_enhancer(config.enhance_enabled, &config.groq_model);
     let final_text = enhancer.enhance(&text, &config.enhance_prompt).await?;
 
     // Inject into active application
     inject::inject_text(&final_text, app).await?;
 
-    // Persist to SQLite
+    // Persist
     let duration_ms = (trimmed.len() as f64 / 16_000.0 * 1000.0) as i64;
     let engine_name = format!("{:?}", config.engine).to_lowercase();
     if let Some(pool) = &state.lock().await.db_pool {
@@ -167,11 +144,13 @@ async fn run_transcription(state: &AppState, app: &AppHandle) -> Result<()> {
     app.emit(events::EVT_RECORDING_RESULT, RecordingResultPayload { text: final_text })
         .map_err(|e| AppError::Emit(e.to_string()))?;
 
-    // Reset state
+    reset_state(state, app).await;
+    Ok(())
+}
+
+async fn reset_state(state: &AppState, app: &AppHandle) {
     let mut guard = state.lock().await;
     guard.recording_state = RecordingState::Idle;
     guard.audio_samples = None;
     tray::update_tray_state(app, &RecordingState::Idle);
-
-    Ok(())
 }

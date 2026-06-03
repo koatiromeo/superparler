@@ -80,12 +80,11 @@ mod tests {
 
     #[test]
     fn test_resample_44100_to_16000() {
-        let seconds = 1.0f32;
+        // 1 second at 44.1 kHz → expect ~16000 samples at 16 kHz
         let samples: Vec<f32> = (0..44100).map(|i| (i as f32 * 440.0 / 44100.0).sin()).collect();
         let result = to_16khz_mono(&samples, 44_100, 1).unwrap();
-        // Should be approximately 16000 samples
-        let expected = (44100.0 * 16000.0 / 44100.0 * seconds) as usize;
-        let tolerance = 100;
+        let expected: usize = 16000;
+        let tolerance: usize = 100;
         assert!(
             result.len().abs_diff(expected) < tolerance,
             "expected ~{expected} samples, got {}",

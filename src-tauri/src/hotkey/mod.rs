@@ -1,4 +1,4 @@
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 use crate::error::{AppError, Result};
@@ -9,7 +9,7 @@ pub async fn register_hotkey(app: &AppHandle, hotkey: &str) -> Result<()> {
         .parse()
         .map_err(|_| AppError::InvalidHotkey(hotkey.to_string()))?;
 
-    let app_clone = app.clone();
+    let _app_clone = app.clone();
     app.global_shortcut()
         .on_shortcut(shortcut, move |app_handle, _shortcut, event| {
             let state = app_handle.state::<AppState>();

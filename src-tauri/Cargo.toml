@@ -2,7 +2,7 @@
 name = "superparler"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.80"
+rust-version = "1.85"
 description = "Desktop dictation app — Tauri 2 / Rust"
 license = "MIT"
 
@@ -13,6 +13,10 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [[bin]]
 name = "superparler"
 path = "src/main.rs"
+
+[[bin]]
+name = "record_test"
+path = "src/bin/record_test.rs"
 
 [dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
@@ -25,8 +29,8 @@ tokio = { version = "1", features = ["full"] }
 cpal = "0.15"
 rubato = "0.15"
 hound = "3"
-whisper-rs = "0.12"
-voice_activity_detector = "0.2"
+whisper-rs = { version = "0.12", optional = true }
+voice_activity_detector = { version = "0.2", optional = true }
 enigo = "0.2"
 reqwest = { version = "0.12", features = ["json", "multipart", "rustls-tls"], default-features = false }
 sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "uuid", "chrono"] }
@@ -40,6 +44,12 @@ keyring = "3"
 directories = "6"
 toml = "0.8"
 async-trait = "0.1"
+
+[features]
+# local-stt: enables whisper-rs (requires LLVM/libclang — run `make setup` or install LLVM)
+# vad: enables Silero VAD via ort (same LLVM requirement as local-stt)
+local-stt = ["dep:whisper-rs"]
+vad = ["dep:voice_activity_detector"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

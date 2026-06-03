@@ -1,8 +1,7 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tauri::State;
 
 use crate::{
-    config::Engine,
     error::{AppError, Result},
     stt::factory,
     state::AppState,

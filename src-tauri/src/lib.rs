@@ -12,6 +12,7 @@ pub mod inject;
 pub mod pipeline;
 pub mod state;
 pub mod storage;
+pub mod stt;
 pub mod tray;
 
 use commands::{engine, history, recording, settings, system};

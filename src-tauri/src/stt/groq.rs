@@ -100,7 +100,7 @@ mod tests {
     // Test WAV encoding produces valid bytes
     #[test]
     fn test_encode_wav_produces_valid_bytes() {
-        let samples: Vec<f32> = (0..1600).map(|i| (i as f32 / 1600.0 * 2.0 - 1.0)).collect();
+        let samples: Vec<f32> = (0..1600).map(|i| i as f32 / 1600.0 * 2.0 - 1.0).collect();
         let result = GroqWhisper::encode_wav(&samples).unwrap();
         // WAV files start with "RIFF"
         assert_eq!(&result[0..4], b"RIFF");

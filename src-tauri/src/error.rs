@@ -38,9 +38,10 @@ pub enum AppError {
     Io(#[from] std::io::Error),
 }
 
-// Required: Tauri commands return Result<T, AppError> and AppError must be serializable for IPC
+// Required: Tauri commands return Result<T, AppError> and AppError must be serializable for IPC.
+// Use std::result::Result explicitly to avoid conflict with our Result<T> type alias below.
 impl serde::Serialize for AppError {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error> {
         serializer.serialize_str(&self.to_string())
     }
 }
