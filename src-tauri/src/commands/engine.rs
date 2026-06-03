@@ -67,12 +67,15 @@ pub async fn list_local_models(_state: State<'_, AppState>) -> Result<Vec<String
 
 #[tauri::command]
 pub async fn set_groq_key(key: String, _state: State<'_, AppState>) -> Result<()> {
-    // Store API key in OS keyring — never in TOML or any file
-    let entry = keyring::Entry::new("superparler", "groq_api_key")
+    if key.trim().is_empty() {
+        return Err(AppError::Keyring("API key must not be empty".to_string()));
+    }
+    // service="superparler", account="groq" — must match stt/groq.rs KEYRING_* constants
+    let entry = keyring::Entry::new("superparler", "groq")
         .map_err(|e| AppError::Keyring(e.to_string()))?;
     entry
-        .set_password(&key)
-        .map_err(|e| AppError::Keyring(e.to_string()))?;
-    tracing::info!("Groq API key saved to keyring");
+        .set_password(key.trim())
+        .map_err(|e| AppError::Keyring(format!("keyring write: {e}")))?;
+    tracing::info!("Groq API key saved to OS keyring");
     Ok(())
 }
