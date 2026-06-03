@@ -18,7 +18,7 @@ pub struct EngineStatus {
 #[tauri::command]
 pub async fn test_engine(state: State<'_, AppState>) -> Result<EngineStatus> {
     let config = state.lock().await.config.clone();
-    let engine_name = format!("{:?}", config.engine).to_lowercase();
+    let engine_name = config.engine.as_str().to_string();
 
     // Try to build the transcriber — this validates model path (local) or API key (groq)
     match factory::build_transcriber(&config) {
