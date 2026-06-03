@@ -1,0 +1,56 @@
+[package]
+name = "superparler"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.80"
+description = "Desktop dictation app — Tauri 2 / Rust"
+license = "MIT"
+
+[lib]
+name = "superparler_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "superparler"
+path = "src/main.rs"
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-autostart = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+cpal = "0.15"
+rubato = "0.15"
+hound = "3"
+whisper-rs = "0.12"
+voice_activity_detector = "0.2"
+enigo = "0.2"
+reqwest = { version = "0.12", features = ["json", "multipart", "rustls-tls"], default-features = false }
+sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "uuid", "chrono"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+keyring = "3"
+directories = "6"
+toml = "0.8"
+async-trait = "0.1"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full", "test-util"] }
+tempfile = "3"

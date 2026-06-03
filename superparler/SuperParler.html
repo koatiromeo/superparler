@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SuperParler — Quiet Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+/* ============================================================
+   SuperParler — « Quiet Tool » design tokens
+   Dark-first. Light theme derived via [data-theme="light"].
+   ============================================================ */
+:root {
+  --bg-base:      #0B0B0F;
+  --bg-surface:   #141419;
+  --bg-elevated:  #1C1C24;
+  --bg-overlay:   rgba(20,20,25,0.82);
+  --border-subtle: #26262F;
+  --border-strong: #33333E;
+  --text-primary:   #F5F5F7;
+  --text-secondary: #A0A0AB;
+  --text-tertiary:  #6C6C78;
+  --text-on-accent: #FFFFFF;
+  --accent:       #6D5EF8;
+  --accent-hover: #5B4CE6;
+  --accent-soft:  rgba(109,94,248,0.14);
+  --accent-ring:  rgba(109,94,248,0.45);
+  --live:       #FF5C7A;
+  --live-soft:  rgba(255,92,122,0.16);
+  --live-glow:  rgba(255,92,122,0.50);
+  --success: #34D399;
+  --success-soft: rgba(52,211,153,0.15);
+  --warning: #FBBF24;
+  --error:   #F87171;
+  --error-soft: rgba(248,113,113,0.14);
+  --grad-voice: linear-gradient(90deg, #6D5EF8 0%, #FF5C7A 100%);
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-pill: 999px;
+  --sh-card: 0 8px 24px rgba(0,0,0,.45);
+  --sh-pop:  0 12px 40px rgba(0,0,0,.55);
+  --sh-focus: 0 0 0 3px var(--accent-ring);
+  --sh-live: 0 0 28px var(--live-glow);
+  --font-sans: 'Geist', -apple-system, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', monospace;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+[data-theme="light"] {
+  --bg-base:      #FAFAFB;
+  --bg-surface:   #FFFFFF;
+  --bg-elevated:  #F2F2F5;
+  --bg-overlay:   rgba(255,255,255,0.78);
+  --border-subtle: #E6E6EB;
+  --border-strong: #D5D5DD;
+  --text-primary:   #18181B;
+  --text-secondary: #52525B;
+  --text-tertiary:  #9A9AA5;
+  --accent-soft:  rgba(109,94,248,0.12);
+  --live-soft:    rgba(255,92,122,0.12);
+  --success-soft: rgba(52,211,153,0.14);
+  --error-soft:   rgba(248,113,113,0.12);
+  --sh-card: 0 8px 24px rgba(20,20,30,.10);
+  --sh-pop:  0 12px 40px rgba(20,20,30,.16);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+body { background: #050507; color: var(--text-primary); overflow: hidden; }
+button { font-family: inherit; }
+::selection { background: var(--accent-soft); }
+.qt-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+.qt-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }
+.qt-scroll::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); background-clip: content-box; }
+.qt-scroll::-webkit-scrollbar-track { background: transparent; }
+.qt-nav[data-active="false"]:hover { background: var(--bg-elevated) !important; }
+#root { width: 100%; height: 100%; }
+#boot { position: fixed; inset: 0; display: grid; place-items: center; background: #050507; color: #6C6C78; font-family: 'Geist', sans-serif; font-size: 13px; z-index: 1; }
+
+@keyframes qt-pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,92,122,0.0), var(--sh-live); transform: scale(1); }
+  50%      { box-shadow: 0 0 0 6px rgba(255,92,122,0.0), 0 0 36px var(--live-glow); transform: scale(1.05); }
+}
+@keyframes qt-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .45; transform: scale(.82); }
+}
+@keyframes qt-spin { to { transform: rotate(360deg); } }
+@keyframes qt-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes qt-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes qt-pop-in {
+  from { opacity: 0; transform: translateY(12px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes qt-hud-in {
+  from { opacity: 0; transform: translate(-50%, 16px) scale(.94); }
+  to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+@keyframes qt-toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <div id="boot">Chargement de SuperParler…</div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js" crossorigin="anonymous"></script>
+
+  <script>window.addEventListener('load', () => { const b = document.getElementById('boot'); if (b) setTimeout(() => b.remove(), 400); });</script>
+
+  <!-- ═══════════════════════════ COMPONENTS ═══════════════════════════ -->
+  <script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+function Icon({ name, size = 18, stroke = 1.75, className = "", style = {} }) {
+  const lib = (window.lucide && window.lucide.icons) || {};
+  const data = lib[name];
+  let nodes = [];
+  if (Array.isArray(data)) {
+    if (Array.isArray(data[2])) nodes = data[2];
+    else if (data.length && Array.isArray(data[0])) nodes = data;
+  } else if (data && Array.isArray(data.iconNode)) {
+    nodes = data.iconNode;
+  }
+  const children = nodes.map((n, i) => React.createElement(n[0], { key: i, ...n[1] }));
+  return React.createElement("svg", {
+    width: size, height: size, viewBox: "0 0 24 24", fill: "none",
+    stroke: "currentColor", strokeWidth: stroke, strokeLinecap: "round",
+    strokeLinejoin: "round", className, style: { flexShrink: 0, display: "block", ...style },
+    "aria-hidden": true,
+  }, children);
+}
+
+function Button({ variant = "primary", size = "md", icon, iconRight, children, onClick, disabled, style = {}, title }) {
+  const [press, setPress] = useState(false);
+  const [hover, setHover] = useState(false);
+  const base = {
+    display: "inline-flex", alignItems: "center", justifyContent: "center",
+    gap: 8, height: size === "sm" ? 30 : 36, padding: size === "sm" ? "0 12px" : "0 16px",
+    borderRadius: "var(--r-sm)", fontFamily: "var(--font-sans)", fontWeight: 500,
+    fontSize: size === "sm" ? 13 : 14, lineHeight: 1, cursor: disabled ? "default" : "pointer",
+    border: "1px solid transparent", transition: "all 150ms var(--ease)", whiteSpace: "nowrap",
+    transform: press ? "scale(.98)" : "scale(1)", opacity: disabled ? 0.45 : 1,
+    userSelect: "none",
+  };
+  const variants = {
+    primary: { background: "var(--accent)", color: "var(--text-on-accent)" },
+    secondary: { background: "transparent", color: "var(--text-primary)", borderColor: "var(--border-subtle)" },
+    ghost: { background: "transparent", color: "var(--text-secondary)" },
+    danger: { background: "transparent", color: "var(--error)" },
+    success: { background: "var(--success-soft)", color: "var(--success)" },
+  };
+  const hoverStyle = !disabled && hover ? {
+    primary: { background: "var(--accent-hover)" },
+    secondary: { background: "var(--bg-elevated)" },
+    ghost: { background: "var(--bg-elevated)", color: "var(--text-primary)" },
+    danger: { background: "var(--error-soft)" },
+    success: { background: "var(--success-soft)" },
+  }[variant] : {};
+  return (
+    <button title={title} onClick={disabled ? undefined : onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => { setHover(false); setPress(false); }}
+      onMouseDown={() => setPress(true)} onMouseUp={() => setPress(false)}
+      style={{ ...base, ...variants[variant], ...hoverStyle, ...style }}>
+      {icon && <Icon name={icon} size={size === "sm" ? 15 : 16} stroke={1.9} />}
+      {children}
+      {iconRight && <Icon name={iconRight} size={size === "sm" ? 15 : 16} stroke={1.9} />}
+    </button>
+  );
+}
+
+function Toggle({ checked, onChange, disabled }) {
+  return (
+    <button role="switch" aria-checked={checked} disabled={disabled}
+      onClick={() => !disabled && onChange(!checked)}
+      style={{
+        width: 40, height: 22, borderRadius: 999, border: "1px solid",
+        borderColor: checked ? "transparent" : "var(--border-strong)",
+        background: checked ? "var(--accent)" : "var(--bg-elevated)",
+        position: "relative", cursor: disabled ? "default" : "pointer",
+        transition: "all 160ms var(--ease)", padding: 0, flexShrink: 0, opacity: disabled ? .5 : 1,
+      }}>
+      <span style={{
+        position: "absolute", top: 2, left: checked ? 19 : 2, width: 16, height: 16,
+        borderRadius: 999, background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,.4)",
+        transition: "left 160ms var(--ease)",
+      }} />
+    </button>
+  );
+}
+
+function Segmented({ options, value, onChange, size = "md", full }) {
+  return (
+    <div style={{
+      display: "inline-flex", padding: 3, gap: 2, background: "var(--bg-elevated)",
+      borderRadius: "var(--r-sm)", border: "1px solid var(--border-subtle)",
+      width: full ? "100%" : "auto",
+    }}>
+      {options.map((o) => {
+        const v = typeof o === "string" ? o : o.value;
+        const label = typeof o === "string" ? o : o.label;
+        const active = v === value;
+        return (
+          <button key={v} onClick={() => onChange(v)} style={{
+            flex: full ? 1 : "0 0 auto", display: "inline-flex", alignItems: "center",
+            justifyContent: "center", gap: 6,
+            height: size === "sm" ? 26 : 30, padding: "0 14px", border: "none",
+            borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 500,
+            fontFamily: "var(--font-sans)", whiteSpace: "nowrap",
+            background: active ? "var(--bg-surface)" : "transparent",
+            color: active ? "var(--text-primary)" : "var(--text-secondary)",
+            boxShadow: active ? "0 1px 3px rgba(0,0,0,.35)" : "none",
+            transition: "all 150ms var(--ease)",
+          }}>
+            {typeof o === "object" && o.icon && <Icon name={o.icon} size={14} stroke={1.9} />}
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Select({ value, options, onChange, width }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+  const current = options.find((o) => (o.value ?? o) === value);
+  const label = current ? (current.label ?? current) : value;
+  return (
+    <div ref={ref} style={{ position: "relative", width: width || "auto" }}>
+      <button onClick={() => setOpen(!open)} style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+        width: "100%", height: 36, padding: "0 12px", background: "var(--bg-elevated)",
+        border: "1px solid", borderColor: open ? "var(--accent)" : "var(--border-subtle)",
+        boxShadow: open ? "var(--sh-focus)" : "none",
+        borderRadius: "var(--r-sm)", color: "var(--text-primary)", fontSize: 14,
+        fontFamily: "var(--font-sans)", cursor: "pointer", transition: "all 150ms var(--ease)",
+      }}>
+        <span>{label}</span>
+        <Icon name="ChevronDown" size={16} stroke={2} style={{ color: "var(--text-tertiary)", transition: "transform 150ms", transform: open ? "rotate(180deg)" : "none" }} />
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 50,
+          background: "var(--bg-surface)", border: "1px solid var(--border-subtle)",
+          borderRadius: "var(--r-sm)", boxShadow: "var(--sh-pop)", padding: 4,
+          animation: "qt-pop-in 140ms var(--ease)",
+        }}>
+          {options.map((o) => {
+            const v = o.value ?? o; const l = o.label ?? o;
+            const active = v === value;
+            return (
+              <button key={v} onClick={() => { onChange(v); setOpen(false); }} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                width: "100%", height: 32, padding: "0 10px", border: "none",
+                borderRadius: 6, background: active ? "var(--accent-soft)" : "transparent",
+                color: active ? "var(--text-primary)" : "var(--text-secondary)",
+                fontSize: 14, fontFamily: "var(--font-sans)", cursor: "pointer", textAlign: "left",
+              }}
+                onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "var(--bg-elevated)"; }}
+                onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}>
+                {l}
+                {active && <Icon name="Check" size={15} stroke={2.2} style={{ color: "var(--accent)" }} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TextInput({ value, onChange, placeholder, mono, password, icon, width, onReveal }) {
+  const [focus, setFocus] = useState(false);
+  const [reveal, setReveal] = useState(false);
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 8, height: 36, width: width || "100%",
+      padding: "0 10px", background: "var(--bg-elevated)", border: "1px solid",
+      borderColor: focus ? "var(--accent)" : "var(--border-subtle)",
+      boxShadow: focus ? "var(--sh-focus)" : "none",
+      borderRadius: "var(--r-sm)", transition: "all 150ms var(--ease)",
+    }}>
+      {icon && <Icon name={icon} size={15} style={{ color: "var(--text-tertiary)" }} />}
+      <input value={value} onChange={(e) => onChange && onChange(e.target.value)}
+        placeholder={placeholder} type={password && !reveal ? "password" : "text"}
+        onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+        style={{
+          flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none",
+          color: "var(--text-primary)", fontSize: 14,
+          fontFamily: mono ? "var(--font-mono)" : "var(--font-sans)",
+          letterSpacing: password && !reveal ? "0.12em" : "normal",
+        }} />
+      {password && (
+        <button onClick={() => setReveal(!reveal)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-tertiary)", display: "flex", padding: 2 }}>
+          <Icon name={reveal ? "EyeOff" : "Eye"} size={15} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function Keycap({ children, wide }) {
+  return (
+    <kbd style={{
+      display: "inline-flex", alignItems: "center", justifyContent: "center",
+      minWidth: wide ? 56 : 24, height: 26, padding: "0 8px",
+      background: "var(--bg-elevated)", border: "1px solid var(--border-strong)",
+      borderBottomWidth: 2, borderRadius: 6, color: "var(--text-primary)",
+      fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 500,
+      boxShadow: "0 1px 0 rgba(0,0,0,.3)",
+    }}>{children}</kbd>
+  );
+}
+
+function HotkeyCapture({ keys = ["⌘", "⇧", "Espace"], onCapture }) {
+  const [capturing, setCapturing] = useState(false);
+  return (
+    <button onClick={() => { setCapturing(true); setTimeout(() => setCapturing(false), 1800); }}
+      style={{
+        display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 12px",
+        width: "100%", background: "var(--bg-elevated)", border: "1px solid",
+        borderColor: capturing ? "var(--accent)" : "var(--border-subtle)",
+        boxShadow: capturing ? "var(--sh-focus)" : "none",
+        borderRadius: "var(--r-sm)", cursor: "pointer", transition: "all 150ms var(--ease)",
+        animation: capturing ? "qt-dot-pulse 1.2s ease-in-out infinite" : "none",
+      }}>
+      {capturing ? (
+        <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Appuyez sur une combinaison…</span>
+      ) : (
+        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {keys.map((k, i) => <Keycap key={i} wide={k.length > 2}>{k}</Keycap>)}
+        </span>
+      )}
+      <span style={{ flex: 1 }} />
+      <Icon name="Keyboard" size={16} style={{ color: "var(--text-tertiary)" }} />
+    </button>
+  );
+}
+
+function Badge({ variant = "neutral", icon, children }) {
+  const styles = {
+    neutral: { background: "transparent", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)" },
+    accent: { background: "var(--accent-soft)", border: "1px solid transparent", color: "var(--accent)" },
+    success: { background: "var(--success-soft)", border: "1px solid transparent", color: "var(--success)" },
+    live: { background: "var(--live-soft)", border: "1px solid transparent", color: "var(--live)" },
+  };
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4, height: 20, padding: "0 8px",
+      borderRadius: 999, fontSize: 11, fontWeight: 600, letterSpacing: "0.02em",
+      fontFamily: "var(--font-sans)", ...styles[variant],
+    }}>
+      {icon && <Icon name={icon} size={11} stroke={2.2} />}
+      {children}
+    </span>
+  );
+}
+
+function StatusDot({ state = "idle", size = 8 }) {
+  const map = {
+    idle: { c: "var(--text-tertiary)", pulse: false },
+    recording: { c: "var(--live)", pulse: true },
+    transcribing: { c: "var(--accent)", pulse: true },
+    success: { c: "var(--success)", pulse: false },
+    error: { c: "var(--error)", pulse: false },
+  };
+  const s = map[state] || map.idle;
+  return (
+    <span style={{
+      width: size, height: size, borderRadius: 999, background: s.c, flexShrink: 0,
+      boxShadow: s.pulse ? `0 0 8px ${s.c}` : "none",
+      animation: s.pulse ? "qt-dot-pulse 1.2s ease-in-out infinite" : "none",
+    }} />
+  );
+}
+
+function Card({ title, desc, right, children, style = {}, pad = 20 }) {
+  return (
+    <section style={{
+      background: "var(--bg-surface)", border: "1px solid var(--border-subtle)",
+      borderRadius: "var(--r-md)", padding: pad, ...style,
+    }}>
+      {(title || right) && (
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: desc ? 4 : 16 }}>
+          <div>
+            {title && <h2 style={{ margin: 0, fontSize: 18, lineHeight: "26px", fontWeight: 600, color: "var(--text-primary)" }}>{title}</h2>}
+          </div>
+          {right}
+        </div>
+      )}
+      {desc && <p style={{ margin: "0 0 16px", fontSize: 13, lineHeight: "18px", color: "var(--text-secondary)", maxWidth: 520 }}>{desc}</p>}
+      {children}
+    </section>
+  );
+}
+
+function Waveform({ bars = 26, active = true, style: wStyle = "bars", height = 40, frozen = false, color }) {
+  const [levels, setLevels] = useState(() => Array.from({ length: bars }, () => 0.25));
+  const raf = useRef(0); const t = useRef(0);
+  useEffect(() => {
+    if (!active || frozen) { setLevels(Array.from({ length: bars }, () => 0.18)); return; }
+    const tick = () => {
+      t.current += 0.18;
+      setLevels(Array.from({ length: bars }, (_, i) => {
+        const c = (bars - 1) / 2;
+        const env = 1 - Math.abs(i - c) / (c + 2) * 0.55;
+        const n = (Math.sin(t.current + i * 0.7) * 0.5 + 0.5) * 0.5
+                + (Math.sin(t.current * 1.7 + i * 1.3) * 0.5 + 0.5) * 0.3
+                + Math.random() * 0.25;
+        return Math.max(0.08, Math.min(1, n * env));
+      }));
+      raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf.current);
+  }, [active, frozen, bars]);
+
+  const fill = color || "var(--grad-voice)";
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: wStyle === "dots" ? 4 : 3, height, justifyContent: "center" }}>
+      {levels.map((l, i) => wStyle === "dots" ? (
+        <span key={i} style={{
+          width: 5, height: 5, borderRadius: 999,
+          background: frozen ? "var(--border-strong)" : fill,
+          opacity: frozen ? 1 : 0.4 + l * 0.6,
+          transform: `translateY(${(0.5 - l) * height * 0.5}px)`,
+          transition: "transform 90ms linear, opacity 90ms linear",
+        }} />
+      ) : (
+        <span key={i} style={{
+          width: 3, borderRadius: 999,
+          height: Math.max(3, l * height),
+          background: frozen ? "var(--border-strong)" : fill,
+          backgroundSize: `${bars * 6}px 100%`,
+          backgroundPosition: `${-i * 6}px 0`,
+          transition: "height 90ms linear",
+        }} />
+      ))}
+    </div>
+  );
+}
+
+function Wordmark({ size = 20, mark = true }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+      {mark && (
+        <span style={{ display: "inline-flex", alignItems: "flex-end", gap: 2.5, height: size * 0.9 }}>
+          {[0.5, 1, 0.7].map((h, i) => (
+            <span key={i} style={{ width: 3, height: size * 0.9 * h, borderRadius: 999, background: "var(--grad-voice)" }} />
+          ))}
+        </span>
+      )}
+      <span style={{ fontSize: size, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--text-primary)" }}>SuperParler</span>
+    </span>
+  );
+}
+
+Object.assign(window, { Icon, Button, Toggle, Segmented, Select, TextInput, Keycap, HotkeyCapture, Badge, StatusDot, Card, Waveform, Wordmark });
+  </script>
+
+  <!-- ═══════════════════════════ HUD ═══════════════════════════ -->
+  <script type="text/babel">
+function HUD({ state, elapsed = 0, pastedText = "", errorMsg = "Micro indisponible", shape = "pill", waveStyle = "bars", holdHint = "Relâchez ⌘⇧Espace pour transcrire" }) {
+  const radius = shape === "card" ? 16 : 999;
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const shell = {
+    position: "relative", display: "flex", alignItems: "center", gap: 14,
+    width: 340, minHeight: 72, padding: "0 18px",
+    background: "var(--bg-overlay)", backdropFilter: "blur(18px) saturate(140%)",
+    WebkitBackdropFilter: "blur(18px) saturate(140%)",
+    border: "1px solid var(--border-strong)", borderRadius: radius,
+    boxShadow: "0 18px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05)",
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, animation: "qt-hud-in 280ms var(--ease)" }}>
+      <div style={shell}>
+        {state === "recording" && <RecordingBody elapsed={fmt(elapsed)} waveStyle={waveStyle} />}
+        {state === "transcribing" && <TranscribingBody />}
+        {state === "pasted" && <PastedBody text={pastedText} />}
+        {state === "error" && <ErrorBody msg={errorMsg} />}
+      </div>
+      {state === "recording" && (
+        <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-sans)" }}>{holdHint}</span>
+      )}
+    </div>
+  );
+}
+
+function MicOrb({ children, glow }) {
+  return (
+    <span style={{
+      width: 40, height: 40, flexShrink: 0, borderRadius: 999,
+      display: "grid", placeItems: "center",
+      background: glow ? "var(--live-soft)" : "var(--bg-elevated)",
+      color: glow ? "var(--live)" : "var(--accent)",
+      boxShadow: glow ? "var(--sh-live)" : "none",
+      animation: glow ? "qt-pulse-glow 1.2s ease-in-out infinite" : "none",
+    }}>{children}</span>
+  );
+}
+
+function RecordingBody({ elapsed, waveStyle }) {
+  return (
+    <React.Fragment>
+      <MicOrb glow><Icon name="Mic" size={18} stroke={2} /></MicOrb>
+      <div style={{ flex: 1, minWidth: 0 }}><Waveform bars={26} active style={waveStyle} height={36} /></div>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 500, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums", minWidth: 36, textAlign: "right" }}>{elapsed}</span>
+    </React.Fragment>
+  );
+}
+
+function TranscribingBody() {
+  return (
+    <React.Fragment>
+      <span style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 999, display: "grid", placeItems: "center", background: "var(--accent-soft)" }}>
+        <span style={{ width: 20, height: 20, borderRadius: 999, border: "2.5px solid var(--accent-soft)", borderTopColor: "var(--accent)", animation: "qt-spin .7s linear infinite" }} />
+      </span>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ flex: 1, height: 8, borderRadius: 999, overflow: "hidden", background: "linear-gradient(90deg, var(--bg-elevated) 25%, var(--border-strong) 37%, var(--bg-elevated) 63%)", backgroundSize: "200% 100%", animation: "qt-shimmer 1.3s linear infinite" }} />
+      </div>
+      <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>Transcription…</span>
+    </React.Fragment>
+  );
+}
+
+function PastedBody({ text }) {
+  return (
+    <React.Fragment>
+      <span style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 999, display: "grid", placeItems: "center", background: "var(--success-soft)", color: "var(--success)" }}>
+        <Icon name="Check" size={20} stroke={2.4} />
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--success)", marginBottom: 3, display: "flex", alignItems: "center", gap: 5 }}>Collé <Icon name="Check" size={11} stroke={2.6} /></div>
+        <div style={{ fontSize: 13, color: "var(--text-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{text || "Texte injecté"}</div>
+      </div>
+    </React.Fragment>
+  );
+}
+
+function ErrorBody({ msg }) {
+  return (
+    <React.Fragment>
+      <span style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 999, display: "grid", placeItems: "center", background: "var(--error-soft)", color: "var(--error)" }}>
+        <Icon name="MicOff" size={18} stroke={2} />
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>{msg}</div>
+        <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Réessayez ⌘⇧Espace</div>
+      </div>
+      <Icon name="X" size={16} style={{ color: "var(--text-tertiary)" }} />
+    </React.Fragment>
+  );
+}
+
+Object.assign(window, { HUD });
+  </script>
+
+  <!-- ═══════════════════════════ TRAY ═══════════════════════════ -->
+  <script type="text/babel">
+function TrayMenu({ state = "idle", onStart, onStop, onHistory, onSettings, onQuit, engine = "Local · Small" }) {
+  const header = { idle: { dot: "idle", label: "SuperParler — Prêt" }, recording: { dot: "recording", label: "Enregistrement…" }, transcribing: { dot: "transcribing", label: "Transcription…" } }[state] || { dot: "idle", label: "SuperParler — Prêt" };
+  const recording = state === "recording";
+  return (
+    <div style={{ width: 260, background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: "var(--r-md)", boxShadow: "var(--sh-pop)", padding: 6, animation: "qt-pop-in 150ms var(--ease)", fontFamily: "var(--font-sans)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 10px 10px" }}>
+        <StatusDot state={header.dot} size={9} />
+        <span style={{ fontSize: 13, fontWeight: 600, color: state === "idle" ? "var(--text-primary)" : "var(--text-secondary)" }}>{header.label}</span>
+      </div>
+      <TrayItem icon={recording ? "Square" : "Mic"} label={recording ? "Arrêter la dictée" : "Démarrer la dictée"} shortcut="⌘⇧Espace" onClick={recording ? onStop : onStart} accent={recording} />
+      <TrayItem icon="History" label="Historique" onClick={onHistory} />
+      <TrayItem icon="Settings" label="Réglages" onClick={onSettings} />
+      <TrayDivider />
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", color: "var(--text-tertiary)", fontSize: 12 }}>
+        <Icon name="Cpu" size={14} /><span>Moteur : {engine}</span>
+      </div>
+      <TrayDivider />
+      <TrayItem icon="Power" label="Quitter" onClick={onQuit} />
+    </div>
+  );
+}
+
+function TrayDivider() { return <div style={{ height: 1, background: "var(--border-subtle)", margin: "5px 8px" }} />; }
+
+function TrayItem({ icon, label, shortcut, onClick, accent }) {
+  const [h, setH] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", height: 34, padding: "0 10px", border: "none", borderRadius: 7, cursor: "pointer", textAlign: "left", background: h ? "var(--accent-soft)" : "transparent", color: h ? "var(--text-primary)" : (accent ? "var(--live)" : "var(--text-secondary)"), transition: "background 120ms var(--ease)", fontFamily: "var(--font-sans)" }}>
+      <Icon name={icon} size={16} style={{ color: accent && !h ? "var(--live)" : "inherit" }} />
+      <span style={{ flex: 1, fontSize: 13.5, fontWeight: 500, color: h ? "var(--text-primary)" : "inherit" }}>{label}</span>
+      {shortcut && <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "var(--text-tertiary)" }}>{shortcut}</span>}
+    </button>
+  );
+}
+
+function TrayGlyph({ state = "idle", size = 17 }) {
+  if (state === "transcribing") {
+    return (
+      <span style={{ display: "inline-flex", gap: 2.5, alignItems: "center", height: size }}>
+        {[0, 1, 2].map((i) => <span key={i} style={{ width: 3.5, height: 3.5, borderRadius: 999, background: "var(--accent)", animation: "qt-dot-pulse 1s ease-in-out infinite", animationDelay: `${i * 0.18}s` }} />)}
+      </span>
+    );
+  }
+  const recording = state === "recording";
+  return (
+    <span style={{ position: "relative", display: "inline-flex" }}>
+      <Icon name="Mic" size={size} stroke={recording ? 0 : 1.9} style={{ color: recording ? "var(--live)" : "var(--text-secondary)", fill: recording ? "var(--live)" : "none" }} />
+      {recording && <span style={{ position: "absolute", inset: -3, borderRadius: 999, boxShadow: "0 0 10px var(--live-glow)", animation: "qt-dot-pulse 1.2s ease-in-out infinite" }} />}
+    </span>
+  );
+}
+
+Object.assign(window, { TrayMenu, TrayGlyph });
+  </script>
+
+  <!-- ═══════════════════════════ HISTORY ═══════════════════════════ -->
+  <script type="text/babel">
+const SEED_HISTORY = [
+  { id: 1, day: "Aujourd'hui", ago: "il y a 3 min", dur: "0:06", engine: "Local", reform: false, text: "Bonjour, peux-tu m'envoyer le contrat révisé avant vendredi ? Merci d'avance." },
+  { id: 2, day: "Aujourd'hui", ago: "il y a 22 min", dur: "0:11", engine: "Groq", reform: true, text: "Compte rendu de la réunion produit : nous validons le périmètre de la v1, le HUD reste prioritaire, et la reformulation passe en bêta interne la semaine prochaine." },
+  { id: 3, day: "Aujourd'hui", ago: "il y a 1 h", dur: "0:04", engine: "Local", reform: false, text: "Note pour moi-même : rappeler le dentiste et déplacer le rendez-vous de jeudi." },
+  { id: 4, day: "Hier", ago: "hier · 18:40", dur: "0:09", engine: "Groq", reform: true, text: "Peux-tu confirmer le créneau de jeudi 14 h pour l'atelier design ? Sinon vendredi matin fonctionne aussi." },
+  { id: 5, day: "Hier", ago: "hier · 09:12", dur: "0:07", engine: "Local", reform: false, text: "Idée d'article : pourquoi la dictée locale change la façon d'écrire au quotidien." },
+  { id: 6, day: "28 mai", ago: "28 mai · 16:05", dur: "0:14", engine: "Groq", reform: false, text: "Liste de courses : café, pain complet, œufs, épinards, parmesan, et des citrons pour le poisson de samedi." },
+];
+
+function HistoryView({ store, set, embedded, onToast }) {
+  const [items, setItems] = useState(SEED_HISTORY);
+  const [query, setQuery] = useState("");
+  const filtered = items.filter((i) => i.text.toLowerCase().includes(query.toLowerCase()));
+  const days = [...new Set(filtered.map((i) => i.day))];
+  const remove = (id) => setItems((xs) => xs.filter((x) => x.id !== id));
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+        {!embedded && <h1 style={{ margin: 0, fontSize: 24, lineHeight: "32px", fontWeight: 700, flexShrink: 0 }}>Historique</h1>}
+        <div style={{ flex: 1, maxWidth: embedded ? "none" : 320 }}>
+          <TextInput icon="Search" value={query} onChange={setQuery} placeholder="Rechercher…" />
+        </div>
+        <span style={{ flex: embedded ? 1 : 0 }} />
+        <Button variant="danger" size="sm" icon="Trash2" onClick={() => setItems([])}>Tout effacer</Button>
+      </div>
+      {filtered.length === 0 ? (
+        <EmptyHistory cleared={items.length === 0 && query === ""} query={query} />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+          {days.map((day) => (
+            <div key={day}>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 8, paddingLeft: 2 }}>{day}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {filtered.filter((i) => i.day === day).map((it) => (
+                  <HistoryItem key={it.id} it={it} onCopy={() => onToast && onToast("Copié")} onRemove={() => remove(it.id)} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HistoryItem({ it, onCopy, onRemove }) {
+  const [h, setH] = useState(false);
+  return (
+    <div onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)} style={{ position: "relative", padding: "14px 16px", borderRadius: "var(--r-md)", background: h ? "var(--bg-elevated)" : "var(--bg-surface)", border: "1px solid var(--border-subtle)", transition: "background 130ms var(--ease)" }}>
+      <p style={{ margin: "0 0 10px", fontSize: 14, lineHeight: "20px", color: "var(--text-primary)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", paddingRight: h ? 76 : 0, transition: "padding 130ms var(--ease)" }}>{it.text}</p>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "var(--text-tertiary)" }}>{it.ago}</span>
+        <span style={{ width: 3, height: 3, borderRadius: 999, background: "var(--border-strong)" }} />
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: "var(--font-mono)", fontSize: 11.5, color: "var(--text-tertiary)" }}><Icon name="Clock" size={12} /> {it.dur}</span>
+        <Badge variant={it.engine === "Groq" ? "accent" : "neutral"} icon={it.engine === "Groq" ? "Cloud" : "Cpu"}>{it.engine}</Badge>
+        {it.reform && <Badge variant="success" icon="Sparkles">Reformulé</Badge>}
+      </div>
+      <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 4, opacity: h ? 1 : 0, transform: h ? "none" : "translateY(-2px)", transition: "all 130ms var(--ease)", pointerEvents: h ? "auto" : "none" }}>
+        <IconBtn icon="Copy" title="Copier" onClick={onCopy} />
+        <IconBtn icon="Trash2" title="Supprimer" danger onClick={onRemove} />
+      </div>
+    </div>
+  );
+}
+
+function IconBtn({ icon, title, danger, onClick }) {
+  const [h, setH] = useState(false);
+  return (
+    <button title={title} onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)} style={{ display: "grid", placeItems: "center", width: 30, height: 30, borderRadius: 7, cursor: "pointer", border: "1px solid var(--border-subtle)", background: h ? (danger ? "var(--error-soft)" : "var(--bg-surface)") : "var(--bg-elevated)", color: h && danger ? "var(--error)" : "var(--text-secondary)", transition: "all 120ms var(--ease)" }}>
+      <Icon name={icon} size={15} />
+    </button>
+  );
+}
+
+function EmptyHistory({ cleared, query }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "72px 0", gap: 14 }}>
+      <span style={{ width: 56, height: 56, borderRadius: 999, display: "grid", placeItems: "center", background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)", color: "var(--text-tertiary)" }}><Icon name={query ? "Search" : "Mic"} size={24} /></span>
+      <div>
+        <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)" }}>{query ? "Aucun résultat" : "Aucune transcription"}</div>
+        <p style={{ margin: "6px 0 0", fontSize: 13.5, color: "var(--text-secondary)" }}>{query ? "Essayez un autre terme de recherche." : "Vos dictées apparaîtront ici."}</p>
+      </div>
+      {!query && (
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--text-tertiary)", marginTop: 2 }}>
+          Maintenez <span style={{ display: "inline-flex", gap: 4 }}><Keycap>⌘</Keycap><Keycap>⇧</Keycap><Keycap wide>Espace</Keycap></span> pour commencer.
+        </div>
+      )}
+    </div>
+  );
+}
+
+Object.assign(window, { HistoryView });
+  </script>
+
+  <!-- ═══════════════════════════ SETTINGS ═══════════════════════════ -->
+  <script type="text/babel">
+function Settings({ nav, setNav, store, set, onClose, onReplayOnboarding }) {
+  const navItems = [
+    { id: "general", label: "Général", icon: "Sliders" },
+    { id: "engine", label: "Moteur", icon: "Cpu" },
+    { id: "hotkey", label: "Raccourci", icon: "Keyboard" },
+    { id: "enhance", label: "Reformulation", icon: "Sparkles" },
+    { id: "history", label: "Historique", icon: "History" },
+    { id: "about", label: "À propos", icon: "Info" },
+  ];
+  const titles = { general: "Général", engine: "Moteur", hotkey: "Raccourci", enhance: "Reformulation", history: "Historique", about: "À propos" };
+  return (
+    <div style={{ width: 880, height: 640, display: "flex", overflow: "hidden", background: "var(--bg-base)", border: "1px solid var(--border-strong)", borderRadius: "var(--r-lg)", boxShadow: "0 32px 90px rgba(0,0,0,.6)" }}>
+      <aside style={{ width: 220, flexShrink: 0, background: "var(--bg-surface)", borderRight: "1px solid var(--border-subtle)", display: "flex", flexDirection: "column", padding: 12 }}>
+        <div style={{ padding: "8px 8px 16px" }}><Wordmark size={16} /></div>
+        <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {navItems.map((it) => {
+            const active = nav === it.id;
+            return (
+              <button key={it.id} className="qt-nav" data-active={active ? "true" : "false"} onClick={() => setNav(it.id)} style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, height: 36, padding: "0 10px 0 12px", border: "none", borderRadius: 8, cursor: "pointer", textAlign: "left", fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 500, background: active ? "var(--accent-soft)" : "transparent", color: active ? "var(--text-primary)" : "var(--text-secondary)", transition: "all 130ms var(--ease)" }}>
+                {active && <span style={{ position: "absolute", left: 0, top: 8, bottom: 8, width: 2, borderRadius: 999, background: "var(--accent)" }} />}
+                <Icon name={it.icon} size={16} style={{ color: active ? "var(--accent)" : "var(--text-tertiary)" }} />
+                {it.label}
+              </button>
+            );
+          })}
+        </nav>
+        <div style={{ flex: 1 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 12px", background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)", borderRadius: "var(--r-sm)" }}>
+          <StatusDot state="idle" size={8} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 500, color: "var(--text-primary)" }}>{store.engine === "groq" ? "Groq · connecté" : "Local · Small"}</div>
+            <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>{store.engine === "groq" ? "whisper-large-v3" : "Hors-ligne · privé"}</div>
+          </div>
+        </div>
+      </aside>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <header style={{ height: 52, flexShrink: 0, display: "flex", alignItems: "center", gap: 12, padding: "0 20px", borderBottom: "1px solid var(--border-subtle)" }}>
+          <h1 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{titles[nav]}</h1>
+          <span style={{ flex: 1 }} />
+          {nav !== "history" && nav !== "about" && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--text-secondary)" }}><StatusDot state="idle" size={7} /> Prêt</span>
+          )}
+          <button onClick={onClose} title="Fermer" style={{ display: "grid", placeItems: "center", width: 28, height: 28, borderRadius: 7, background: "transparent", border: "1px solid var(--border-subtle)", cursor: "pointer", color: "var(--text-secondary)" }}><Icon name="X" size={15} /></button>
+        </header>
+        <div className="qt-scroll" style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: 20 }}>
+          {nav === "general" && <GeneralSection store={store} set={set} />}
+          {nav === "engine" && <EngineSection store={store} set={set} />}
+          {nav === "hotkey" && <HotkeySection store={store} set={set} />}
+          {nav === "enhance" && <EnhanceSection store={store} set={set} />}
+          {nav === "history" && <window.HistoryView store={store} set={set} embedded />}
+          {nav === "about" && <AboutSection onReplayOnboarding={onReplayOnboarding} />}
+          {nav !== "history" && nav !== "about" && (
+            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, marginTop: 18, color: "var(--text-tertiary)", fontSize: 12.5 }}>
+              <Icon name="Check" size={13} stroke={2.2} /> Modifications enregistrées
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, hint, children, top }) {
+  return (
+    <div style={{ display: "flex", alignItems: top ? "flex-start" : "center", justifyContent: "space-between", gap: 24, padding: "10px 0" }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>{label}</div>
+        {hint && <div style={{ fontSize: 12.5, color: "var(--text-tertiary)", marginTop: 2, maxWidth: 360 }}>{hint}</div>}
+      </div>
+      <div style={{ flexShrink: 0 }}>{children}</div>
+    </div>
+  );
+}
+
+function Stack({ children, gap = 16 }) { return <div style={{ display: "flex", flexDirection: "column", gap }}>{children}</div>; }
+
+function ModelCard({ name, size, badge, selected, onClick }) {
+  return (
+    <button onClick={onClick} style={{ flex: 1, textAlign: "left", padding: 14, borderRadius: "var(--r-sm)", cursor: "pointer", background: selected ? "var(--accent-soft)" : "var(--bg-elevated)", border: "1px solid", borderColor: selected ? "var(--accent)" : "var(--border-subtle)", transition: "all 140ms var(--ease)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{name}</span>
+        <span style={{ width: 16, height: 16, borderRadius: 999, display: "grid", placeItems: "center", border: "1.5px solid", borderColor: selected ? "var(--accent)" : "var(--border-strong)", background: selected ? "var(--accent)" : "transparent" }}>{selected && <Icon name="Check" size={11} stroke={3} style={{ color: "#fff" }} />}</span>
+      </div>
+      <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text-tertiary)", marginBottom: badge ? 8 : 0 }}>{size}</div>
+      {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
+    </button>
+  );
+}
+
+function FieldLabel({ children }) { return <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 8 }}>{children}</div>; }
+
+function EngineSection({ store, set }) {
+  return (
+    <Stack>
+      <Card title="Moteur de transcription" desc="Choisissez où votre voix est transcrite.">
+        <Segmented full options={[{ value: "local", label: "Local", icon: "Cpu" }, { value: "groq", label: "Groq (cloud)", icon: "Cloud" }]} value={store.engine} onChange={(v) => set({ engine: v })} />
+        {store.engine === "local" ? (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: "flex", gap: 12 }}>
+              <ModelCard name="Small" size="466 Mo" badge={{ variant: "accent", label: "Recommandé" }} selected={store.model === "small"} onClick={() => set({ model: "small" })} />
+              <ModelCard name="Medium" size="1,5 Go" badge={{ variant: "neutral", label: "Meilleure précision FR" }} selected={store.model === "medium"} onClick={() => set({ model: "medium" })} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
+              <span style={{ fontSize: 12.5, color: "var(--text-tertiary)", display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="ShieldCheck" size={14} /> Fonctionne hors-ligne, privé.</span>
+              <Button variant="secondary" size="sm" icon="Play">Tester</Button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <FieldLabel>Clé API</FieldLabel>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <TextInput password mono value={store.apiKey} onChange={(v) => set({ apiKey: v })} placeholder="gsk_••••••••••••••••" />
+                <a href="#" onClick={(e) => e.preventDefault()} style={{ fontSize: 13, color: "var(--accent)", whiteSpace: "nowrap", textDecoration: "none" }}>Obtenir une clé</a>
+              </div>
+            </div>
+            <div>
+              <FieldLabel>Modèle</FieldLabel>
+              <Select value={store.groqModel} onChange={(v) => set({ groqModel: v })} options={["whisper-large-v3-turbo", "whisper-large-v3", "distil-whisper-large-v3"]} width={300} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <Badge variant="success" icon="Zap">180 ms</Badge>
+                <span style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}>Ultra rapide, nécessite une connexion.</span>
+              </span>
+              <Button variant="secondary" size="sm" icon="Plug">Tester la connexion</Button>
+            </div>
+          </div>
+        )}
+      </Card>
+      <Card title="Langue & saisie">
+        <div style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <Row label="Langue" hint="Langue de transcription par défaut."><Select value={store.lang} onChange={(v) => set({ lang: v })} width={180} options={[{ value: "fr", label: "Français" }, { value: "auto", label: "Auto" }, { value: "en", label: "English" }]} /></Row>
+          <div style={{ borderTop: "1px solid var(--border-subtle)" }} />
+          <Row label="Lancer au démarrage" hint="Ouvrir SuperParler à la connexion."><Toggle checked={store.launchOnStart} onChange={(v) => set({ launchOnStart: v })} /></Row>
+          <div style={{ borderTop: "1px solid var(--border-subtle)" }} />
+          <Row label="Méthode d'injection" hint="Comment le texte arrive dans vos apps."><Segmented options={[{ value: "paste", label: "Coller" }, { value: "type", label: "Taper" }]} value={store.inject} onChange={(v) => set({ inject: v })} /></Row>
+        </div>
+      </Card>
+    </Stack>
+  );
+}
+
+function HotkeySection({ store, set }) {
+  return (
+    <Card title="Raccourci" desc="Déclenchez la dictée depuis n'importe quelle application.">
+      <Stack gap={16}>
+        <HotkeyCapture keys={["⌘", "⇧", "Espace"]} />
+        <Row label="Comportement" hint="Maintenir la touche, ou activer/désactiver."><Segmented options={[{ value: "hold", label: "Maintenir" }, { value: "toggle", label: "Bascule" }]} value={store.hotkeyMode} onChange={(v) => set({ hotkeyMode: v })} /></Row>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", background: "var(--bg-elevated)", borderRadius: "var(--r-sm)", border: "1px solid var(--border-subtle)", fontSize: 13.5, color: "var(--text-secondary)" }}>
+          <Icon name="Info" size={15} style={{ color: "var(--text-tertiary)" }} />
+          {store.hotkeyMode === "hold" ? "Maintenez " : "Appuyez sur "}
+          <span style={{ display: "inline-flex", gap: 4 }}><Keycap>⌘</Keycap><Keycap>⇧</Keycap><Keycap wide>Espace</Keycap></span>
+          pour dicter.
+        </div>
+      </Stack>
+    </Card>
+  );
+}
+
+function EnhanceSection({ store, set }) {
+  const chips = ["Email", "Liste à puces", "Corriger l'orthographe"];
+  return (
+    <Card title="Reformulation" desc="Réécrit votre dictée avant de l'injecter — ton, format, orthographe.">
+      <Stack gap={16}>
+        <Row label="Activer la reformulation" hint="Passe le texte transcrit par un modèle de langage."><Toggle checked={store.enhance} onChange={(v) => set({ enhance: v })} /></Row>
+        <div style={{ opacity: store.enhance ? 1 : 0.45, pointerEvents: store.enhance ? "auto" : "none", transition: "opacity 160ms" }}>
+          <FieldLabel>Instruction</FieldLabel>
+          <textarea value={store.enhancePrompt} onChange={(e) => set({ enhancePrompt: e.target.value })} rows={3} className="qt-scroll" style={{ width: "100%", resize: "none", background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)", borderRadius: "var(--r-sm)", padding: "10px 12px", color: "var(--text-primary)", fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: "20px", outline: "none" }} />
+          <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+            {chips.map((c) => (<button key={c} onClick={() => set({ enhancePrompt: `Reformule en ${c.toLowerCase()}.` })} style={{ height: 28, padding: "0 12px", borderRadius: 999, cursor: "pointer", background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)", color: "var(--text-secondary)", fontSize: 12.5, fontFamily: "var(--font-sans)" }}>{c}</button>))}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 12.5, color: "var(--text-tertiary)" }}><Icon name="Sparkles" size={13} /> Utilise Groq Llama. Nécessite une clé.</div>
+        </div>
+      </Stack>
+    </Card>
+  );
+}
+
+function GeneralSection({ store, set }) {
+  return (
+    <Stack>
+      <Card title="Apparence">
+        <div style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <Row label="Thème" hint="Sombre par défaut. Le clair est dérivé."><Segmented options={[{ value: "dark", label: "Sombre" }, { value: "light", label: "Clair" }]} value={store.theme} onChange={(v) => set({ theme: v })} /></Row>
+          <div style={{ borderTop: "1px solid var(--border-subtle)" }} />
+          <Row label="Son de confirmation" hint="Bip discret quand le texte est collé."><Toggle checked={store.sound} onChange={(v) => set({ sound: v })} /></Row>
+          <div style={{ borderTop: "1px solid var(--border-subtle)" }} />
+          <Row label="Afficher le HUD" hint="Pill flottant pendant la dictée."><Toggle checked={store.showHud} onChange={(v) => set({ showHud: v })} /></Row>
+        </div>
+      </Card>
+    </Stack>
+  );
+}
+
+function AboutSection({ onReplayOnboarding }) {
+  return (
+    <Stack>
+      <Card>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "20px 0 8px", gap: 12 }}>
+          <Wordmark size={26} />
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--text-tertiary)" }}>Version 1.0.0 · macOS</div>
+          <p style={{ margin: "4px 0 0", fontSize: 13.5, color: "var(--text-secondary)", maxWidth: 380, lineHeight: "20px" }}>Dictez partout. En local, ou boosté par le cloud. Calme, dense, précis.</p>
+          <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+            <Button variant="secondary" size="sm" icon="RefreshCw" onClick={onReplayOnboarding}>Revoir l'introduction</Button>
+            <Button variant="secondary" size="sm" icon="FileText">Licences</Button>
+          </div>
+        </div>
+      </Card>
+    </Stack>
+  );
+}
+
+Object.assign(window, { Settings });
+  </script>
+
+  <!-- ═══════════════════════════ ONBOARDING ═══════════════════════════ -->
+  <script type="text/babel">
+function Onboarding({ onFinish, onSkip }) {
+  const [step, setStep] = useState(0);
+  const [micGranted, setMicGranted] = useState(false);
+  const [a11yGranted, setA11yGranted] = useState(false);
+  const [engine, setEngine] = useState("local");
+  const [model, setModel] = useState("small");
+  const [hotkeyMode, setHotkeyMode] = useState("hold");
+  const next = () => setStep((s) => Math.min(3, s + 1));
+  return (
+    <div style={{ width: 720, height: 560, position: "relative", display: "flex", flexDirection: "column", background: "var(--bg-base)", border: "1px solid var(--border-strong)", borderRadius: "var(--r-lg)", boxShadow: "0 32px 90px rgba(0,0,0,.6)", overflow: "hidden" }}>
+      <button onClick={onSkip} style={{ position: "absolute", top: 18, right: 20, zIndex: 5, background: "none", border: "none", color: "var(--text-tertiary)", fontSize: 13, cursor: "pointer", fontFamily: "var(--font-sans)" }}>Passer</button>
+      <div key={step} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 56px", animation: "qt-rise 320ms var(--ease)" }}>
+        {step === 0 && <StepWelcome onNext={next} />}
+        {step === 1 && <StepPerms micGranted={micGranted} setMic={setMicGranted} a11yGranted={a11yGranted} setA11y={setA11yGranted} onNext={next} />}
+        {step === 2 && <StepEngine engine={engine} setEngine={setEngine} model={model} setModel={setModel} onNext={next} />}
+        {step === 3 && <StepHotkey hotkeyMode={hotkeyMode} setHotkeyMode={setHotkeyMode} onFinish={onFinish} />}
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 8, paddingBottom: 26 }}>
+        {[0, 1, 2, 3].map((i) => (<span key={i} style={{ width: i === step ? 22 : 7, height: 7, borderRadius: 999, background: i === step ? "var(--accent)" : "var(--border-strong)", transition: "all 220ms var(--ease)" }} />))}
+      </div>
+    </div>
+  );
+}
+
+function StepWelcome({ onNext }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 18 }}>
+      <Wordmark size={34} />
+      <p style={{ margin: 0, fontSize: 16, lineHeight: "24px", color: "var(--text-secondary)", maxWidth: 360 }}>Dictez partout. En local, ou boosté par le cloud.</p>
+      <div style={{ marginTop: 6, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+        <Button onClick={onNext} style={{ minWidth: 200, height: 42 }}>Commencer</Button>
+        <a href="#" onClick={(e) => e.preventDefault()} style={{ fontSize: 13, color: "var(--text-tertiary)", textDecoration: "none" }}>En savoir plus</a>
+      </div>
+    </div>
+  );
+}
+
+function StepHeader({ title, desc }) {
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <h1 style={{ margin: 0, fontSize: 24, lineHeight: "32px", fontWeight: 700 }}>{title}</h1>
+      {desc && <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: "20px", color: "var(--text-secondary)" }}>{desc}</p>}
+    </div>
+  );
+}
+
+function PermCard({ icon, title, desc, granted, onGrant }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 14, padding: 16, background: "var(--bg-surface)", border: "1px solid", borderColor: granted ? "var(--success)" : "var(--border-subtle)", borderRadius: "var(--r-md)", transition: "border-color 160ms var(--ease)" }}>
+      <span style={{ width: 40, height: 40, borderRadius: "var(--r-sm)", display: "grid", placeItems: "center", flexShrink: 0, background: "var(--bg-elevated)", color: granted ? "var(--success)" : "var(--accent)" }}><Icon name={icon} size={20} /></span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 600, color: "var(--text-primary)" }}>{title}</div>
+        <div style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}>{desc}</div>
+      </div>
+      {granted
+        ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--success)", fontSize: 13.5, fontWeight: 500 }}><Icon name="Check" size={16} stroke={2.4} />Autorisé</span>
+        : <Button variant="secondary" size="sm" onClick={onGrant}>Autoriser</Button>}
+    </div>
+  );
+}
+
+function StepPerms({ micGranted, setMic, a11yGranted, setA11y, onNext }) {
+  return (
+    <div>
+      <StepHeader title="Deux autorisations système" desc="Nécessaires pour capter votre voix et coller le texte." />
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <PermCard icon="Mic" title="Microphone" desc="Pour capter votre voix." granted={micGranted} onGrant={() => setMic(true)} />
+        <PermCard icon="Keyboard" title="Accessibilité" desc="Pour coller le texte dans vos applications." granted={a11yGranted} onGrant={() => setA11y(true)} />
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 22 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--text-tertiary)" }}><Icon name="Lock" size={13} /> Aucun audio ne quitte votre machine en mode local.</span>
+        <Button onClick={onNext} disabled={!micGranted} iconRight="ArrowRight">Continuer</Button>
+      </div>
+    </div>
+  );
+}
+
+function OnbModelCard({ name, size, badge, selected, onClick }) {
+  return (
+    <button onClick={onClick} style={{ flex: 1, textAlign: "left", padding: 14, borderRadius: "var(--r-sm)", cursor: "pointer", background: selected ? "var(--accent-soft)" : "var(--bg-surface)", border: "1px solid", borderColor: selected ? "var(--accent)" : "var(--border-subtle)", transition: "all 140ms var(--ease)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <span style={{ fontSize: 14, fontWeight: 600 }}>{name}</span>
+        <span style={{ width: 16, height: 16, borderRadius: 999, display: "grid", placeItems: "center", border: "1.5px solid", borderColor: selected ? "var(--accent)" : "var(--border-strong)", background: selected ? "var(--accent)" : "transparent" }}>{selected && <Icon name="Check" size={11} stroke={3} style={{ color: "#fff" }} />}</span>
+      </div>
+      <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text-tertiary)", marginBottom: 8 }}>{size}</div>
+      {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
+    </button>
+  );
+}
+
+function StepEngine({ engine, setEngine, model, setModel, onNext }) {
+  return (
+    <div>
+      <StepHeader title="Moteur de transcription" desc="Vous pourrez en changer à tout moment." />
+      <Segmented full options={[{ value: "local", label: "Local", icon: "Cpu" }, { value: "groq", label: "Groq (cloud)", icon: "Cloud" }]} value={engine} onChange={setEngine} />
+      <div style={{ marginTop: 16, minHeight: 132 }}>
+        {engine === "local" ? (
+          <div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <OnbModelCard name="Small" size="466 Mo" badge={{ variant: "accent", label: "Recommandé" }} selected={model === "small"} onClick={() => setModel("small")} />
+              <OnbModelCard name="Medium" size="1,5 Go" badge={{ variant: "neutral", label: "Meilleure précision FR" }} selected={model === "medium"} onClick={() => setModel("medium")} />
+            </div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 14, fontSize: 12.5, color: "var(--text-tertiary)" }}><Icon name="WifiOff" size={13} /> Fonctionne hors-ligne, privé.</div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 8 }}>Clé API</div>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <TextInput password mono placeholder="gsk_••••••••••••••••" value="" onChange={() => {}} />
+                <a href="#" onClick={(e) => e.preventDefault()} style={{ fontSize: 13, color: "var(--accent)", whiteSpace: "nowrap", textDecoration: "none" }}>Obtenir une clé</a>
+              </div>
+            </div>
+            <Select value="whisper-large-v3-turbo" onChange={() => {}} options={["whisper-large-v3-turbo", "whisper-large-v3"]} width={300} />
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--text-tertiary)" }}><Icon name="Zap" size={13} /> Ultra rapide, nécessite une connexion.</div>
+          </div>
+        )}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 18 }}>
+        <Button onClick={onNext} iconRight="ArrowRight">Continuer</Button>
+      </div>
+    </div>
+  );
+}
+
+function StepHotkey({ hotkeyMode, setHotkeyMode, onFinish }) {
+  return (
+    <div>
+      <StepHeader title="Votre raccourci" desc="Une combinaison pour dicter depuis n'importe où." />
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <HotkeyCapture keys={["⌘", "⇧", "Espace"]} />
+        <Segmented full options={[{ value: "hold", label: "Maintenir pour parler" }, { value: "toggle", label: "Activer / désactiver" }]} value={hotkeyMode} onChange={setHotkeyMode} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px", background: "var(--bg-surface)", borderRadius: "var(--r-md)", border: "1px solid var(--border-subtle)", fontSize: 14, color: "var(--text-secondary)" }}>
+          {hotkeyMode === "hold" ? "Maintenez" : "Appuyez sur"}
+          <span style={{ display: "inline-flex", gap: 4 }}><Keycap>⌘</Keycap><Keycap>⇧</Keycap><Keycap wide>Espace</Keycap></span>
+          pour dicter.
+        </div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 22 }}>
+        <Button onClick={onFinish} icon="Check" style={{ minWidth: 140 }}>Terminer</Button>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { Onboarding });
+  </script>
+
+  <!-- ═══════════════════════════ DESKTOP ═══════════════════════════ -->
+  <script type="text/babel">
+function MenuBar({ trayState, onTrayClick, trayOpen, clock }) {
+  const menus = ["Éditeur", "Fichier", "Sélection", "Affichage", "Aller", "Aide"];
+  return (
+    <div style={{ height: 28, flexShrink: 0, display: "flex", alignItems: "center", gap: 0, padding: "0 10px", background: "rgba(8,8,12,0.72)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderBottom: "1px solid rgba(255,255,255,0.06)", position: "relative", zIndex: 60, fontSize: 13 }}>
+      <span style={{ display: "grid", placeItems: "center", width: 22, color: "var(--text-secondary)" }}><Icon name="Command" size={14} stroke={2} /></span>
+      <span style={{ fontWeight: 600, padding: "0 10px", color: "var(--text-primary)" }}>Code</span>
+      {menus.map((m) => (<span key={m} style={{ padding: "0 9px", color: "var(--text-secondary)", cursor: "default" }}>{m}</span>))}
+      <span style={{ flex: 1 }} />
+      <button onClick={onTrayClick} title="SuperParler" style={{ display: "grid", placeItems: "center", width: 30, height: 22, borderRadius: 6, background: trayOpen ? "rgba(255,255,255,0.12)" : "transparent", border: "none", cursor: "pointer", transition: "background 120ms" }}>
+        <TrayGlyph state={trayState} size={16} />
+      </button>
+      <span style={{ display: "grid", placeItems: "center", width: 24, color: "var(--text-secondary)" }}><Icon name="Wifi" size={15} /></span>
+      <span style={{ display: "grid", placeItems: "center", width: 24, color: "var(--text-secondary)" }}><Icon name="BatteryFull" size={17} /></span>
+      <span style={{ padding: "0 8px 0 4px", color: "var(--text-primary)", fontFamily: "var(--font-mono)", fontSize: 12 }}>{clock}</span>
+    </div>
+  );
+}
+
+const CODE_LINES = [
+  [["kw", "export"], ["sp"], ["kw", "function"], ["sp"], ["fn", "transcribe"], ["pl", "("], ["pa", "audio"], ["pl", ")"], ["sp"], ["pl", "{"]],
+  [["in"], ["kw", "const"], ["sp"], ["va", "engine"], ["sp"], ["pl", "="], ["sp"], ["va", "settings"], ["pl", "."], ["pr", "engine"]],
+  [["in"], ["kw", "const"], ["sp"], ["va", "model"], ["sp"], ["pl", "="], ["sp"], ["kw", "await"], ["sp"], ["fn", "load"], ["pl", "("], ["va", "engine"], ["pl", ")"]],
+  [],
+  [["in"], ["co", "// le HUD pulse pendant la capture"]],
+  [["in"], ["kw", "const"], ["sp"], ["va", "text"], ["sp"], ["pl", "="], ["sp"], ["kw", "await"], ["sp"], ["va", "model"], ["pl", "."], ["fn", "run"], ["pl", "("], ["va", "audio"], ["pl", ")"]],
+  [["in"], ["kw", "if"], ["sp"], ["pl", "("], ["va", "settings"], ["pl", "."], ["pr", "enhance"], ["pl", ")"], ["sp"], ["pl", "{"]],
+  [["in"], ["in"], ["va", "text"], ["sp"], ["pl", "="], ["sp"], ["kw", "await"], ["sp"], ["fn", "reformuler"], ["pl", "("], ["va", "text"], ["pl", ")"]],
+  [["in"], ["pl", "}"]],
+  [],
+  [["in"], ["kw", "return"], ["sp"], ["fn", "inject"], ["pl", "("], ["va", "text"], ["pl", ")"]],
+  [["pl", "}"]],
+];
+const TOK = { kw: "#C792EA", fn: "#82AAFF", va: "#F5F5F7", pr: "#FFCB6B", pl: "#7A7A88", co: "#5C6370", pa: "#F78C6C" };
+
+function CodeEditor() {
+  return (
+    <div style={{ position: "absolute", inset: "44px 28px 28px", borderRadius: 12, overflow: "hidden", background: "#0E0E13", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 24px 60px rgba(0,0,0,.5)", display: "flex", flexDirection: "column" }}>
+      <div style={{ height: 38, display: "flex", alignItems: "center", gap: 8, padding: "0 14px", borderBottom: "1px solid rgba(255,255,255,0.05)", flexShrink: 0 }}>
+        <span style={{ display: "flex", gap: 7 }}>{["#FF5F57", "#FEBC2E", "#28C840"].map((c) => <span key={c} style={{ width: 11, height: 11, borderRadius: 999, background: c }} />)}</span>
+        <span style={{ flex: 1, textAlign: "center", fontSize: 12, color: "var(--text-tertiary)", fontFamily: "var(--font-mono)" }}>transcribe.ts — superparler</span>
+      </div>
+      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <div style={{ width: 44, flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 12, gap: 18, color: "#4A4A56" }}>
+          <Icon name="Files" size={18} style={{ color: "#9A9AA5" }} />
+          <Icon name="Search" size={18} />
+          <Icon name="GitBranch" size={18} />
+        </div>
+        <pre style={{ flex: 1, margin: 0, padding: "14px 0", overflow: "hidden", fontFamily: "var(--font-mono)", fontSize: 13, lineHeight: "22px" }}>
+          {CODE_LINES.map((line, i) => (
+            <div key={i} style={{ display: "flex", paddingRight: 16 }}>
+              <span style={{ width: 44, flexShrink: 0, textAlign: "right", paddingRight: 16, color: "#3A3A46", userSelect: "none" }}>{i + 1}</span>
+              <span style={{ whiteSpace: "pre" }}>
+                {line.map((t, j) => { if (t[0] === "sp") return " "; if (t[0] === "in") return "  "; return <span key={j} style={{ color: TOK[t[0]] || "#F5F5F7" }}>{t[1]}</span>; })}
+              </span>
+            </div>
+          ))}
+        </pre>
+      </div>
+      <div style={{ height: 24, flexShrink: 0, display: "flex", alignItems: "center", gap: 14, padding: "0 14px", background: "rgba(109,94,248,0.10)", borderTop: "1px solid rgba(255,255,255,0.05)", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-tertiary)" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="GitBranch" size={12} /> main</span>
+        <span style={{ flex: 1 }} />
+        <span>TypeScript</span><span>UTF-8</span><span>Ln 6, Col 24</span>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { MenuBar, CodeEditor });
+  </script>
+
+  <!-- ═══════════════════════════ APP ═══════════════════════════ -->
+  <script type="text/babel">
+const DEFAULT_STORE = {
+  engine: "local", model: "small", apiKey: "", groqModel: "whisper-large-v3-turbo",
+  lang: "fr", launchOnStart: true, inject: "paste", hotkeyMode: "hold", enhance: true,
+  enhancePrompt: "Corrige l'orthographe et la ponctuation, garde un ton naturel.",
+  theme: "dark", sound: true, showHud: true,
+};
+const PASTED_TEXT = "Peux-tu confirmer le créneau de jeudi 14 h pour l'atelier design…";
+
+function useClock() {
+  const [t, setT] = useState("");
+  useEffect(() => {
+    const fmt = () => new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    setT(fmt());
+    const id = setInterval(() => setT(fmt()), 10000);
+    return () => clearInterval(id);
+  }, []);
+  return t;
+}
+
+function App() {
+  const [store, setStore] = useState(() => {
+    try { return { ...DEFAULT_STORE, ...JSON.parse(localStorage.getItem("sp_store") || "{}") }; }
+    catch { return DEFAULT_STORE; }
+  });
+  const set = useCallback((patch) => setStore((s) => { const n = { ...s, ...patch }; localStorage.setItem("sp_store", JSON.stringify(n)); return n; }), []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", store.theme);
+  }, [store.theme]);
+
+  const [showOnb, setShowOnb] = useState(() => localStorage.getItem("sp_onboarded") !== "1");
+  const finishOnb = () => { localStorage.setItem("sp_onboarded", "1"); setShowOnb(false); };
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [nav, setNav] = useState("engine");
+  const [trayOpen, setTrayOpen] = useState(false);
+
+  const [rec, setRec] = useState("idle");
+  const [elapsed, setElapsed] = useState(0);
+  const timers = useRef([]);
+  const elapsedRef = useRef(null);
+  const clearTimers = () => { timers.current.forEach(clearTimeout); timers.current = []; };
+
+  const startRec = useCallback(() => {
+    clearTimers(); setTrayOpen(false); setRec("recording"); setElapsed(0);
+    clearInterval(elapsedRef.current);
+    elapsedRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
+  }, []);
+
+  const stopRec = useCallback(() => {
+    clearInterval(elapsedRef.current);
+    setRec("transcribing");
+    timers.current.push(setTimeout(() => setRec("pasted"), 1500));
+    timers.current.push(setTimeout(() => { setRec("idle"); showToast("Texte collé"); }, 3100));
+  }, []);
+
+  const triggerError = useCallback(() => {
+    clearTimers(); clearInterval(elapsedRef.current); setTrayOpen(false); setRec("error");
+    timers.current.push(setTimeout(() => setRec("idle"), 2400));
+  }, []);
+
+  const trayState = rec === "recording" ? "recording" : rec === "transcribing" ? "transcribing" : "idle";
+
+  useEffect(() => {
+    const h = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.code === "Space" || e.key === " ")) {
+        e.preventDefault();
+        setRec((r) => { if (r === "idle") { startRec(); return "recording"; } if (r === "recording") { stopRec(); return r; } return r; });
+      }
+      if (e.key === "Escape") { setTrayOpen(false); setSettingsOpen(false); }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [startRec, stopRec]);
+
+  const [toastMsg, setToastMsg] = useState(null);
+  const toastTimer = useRef(null);
+  const showToast = useCallback((msg) => {
+    setToastMsg(msg); clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMsg(null), 2500);
+  }, []);
+
+  const W = 1440, H = 900;
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const fit = () => setScale(Math.min(window.innerWidth / W, window.innerHeight / H));
+    fit(); window.addEventListener("resize", fit); return () => window.removeEventListener("resize", fit);
+  }, []);
+  const clock = useClock();
+  const openSettings = (section) => { setNav(section || "engine"); setSettingsOpen(true); setTrayOpen(false); };
+
+  return (
+    <div style={{ width: "100vw", height: "100vh", background: "#050507", display: "grid", placeItems: "center", overflow: "hidden" }}>
+      <div style={{ width: W, height: H, transform: `scale(${scale})`, transformOrigin: "center", position: "relative", flexShrink: 0 }}>
+        {/* wallpaper */}
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(120% 90% at 50% 0%, #16121f 0%, #0a0a0e 55%, #060608 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}>
+          <MenuBar trayState={trayState} trayOpen={trayOpen} onTrayClick={() => setTrayOpen((o) => !o)} clock={clock} />
+          <div style={{ flex: 1, position: "relative" }}><CodeEditor /></div>
+        </div>
+
+        {/* tray dropdown */}
+        {trayOpen && (
+          <div style={{ position: "absolute", top: 32, right: 96, zIndex: 70 }}>
+            <TrayMenu state={trayState} engine={store.engine === "groq" ? "Groq · connecté" : "Local · Small"}
+              onStart={startRec} onStop={stopRec}
+              onHistory={() => openSettings("history")} onSettings={() => openSettings("engine")}
+              onQuit={() => { setTrayOpen(false); showToast("À bientôt 👋"); }} />
+          </div>
+        )}
+        {trayOpen && <div onClick={() => setTrayOpen(false)} style={{ position: "absolute", inset: 0, zIndex: 65 }} />}
+
+        {/* HUD */}
+        {rec !== "idle" && store.showHud && (
+          <div style={{ position: "absolute", left: "50%", bottom: 60, transform: "translateX(-50%)", zIndex: 80 }}>
+            <HUD state={rec} elapsed={elapsed} pastedText={PASTED_TEXT}
+              holdHint={store.hotkeyMode === "hold" ? "Relâchez ⌘⇧Espace pour transcrire" : "Appuyez sur ⌘⇧Espace pour arrêter"} />
+            {rec === "recording" && (
+              <button onClick={stopRec} style={{ position: "absolute", bottom: -34, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", background: "none", border: "none", color: "var(--text-tertiary)", fontSize: 12, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>terminer la démo</button>
+            )}
+          </div>
+        )}
+
+        {/* Settings window */}
+        {settingsOpen && (
+          <WindowFrame onClose={() => setSettingsOpen(false)} z={90}>
+            <Settings nav={nav} setNav={setNav} store={store} set={set} onClose={() => setSettingsOpen(false)} onReplayOnboarding={() => { setSettingsOpen(false); setShowOnb(true); }} />
+          </WindowFrame>
+        )}
+
+        {/* Onboarding */}
+        {showOnb && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 100, display: "grid", placeItems: "center", background: "rgba(4,4,8,0.55)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", animation: "qt-rise 240ms var(--ease)" }}>
+            <Onboarding onFinish={finishOnb} onSkip={finishOnb} />
+          </div>
+        )}
+
+        {/* Toast */}
+        {toastMsg && (
+          <div style={{ position: "absolute", left: "50%", bottom: 28, zIndex: 110, animation: "qt-toast-in 220ms var(--ease)", display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: "var(--r-md)", boxShadow: "var(--sh-pop)", transform: "translateX(-50%)" }}>
+            <Icon name="Check" size={16} stroke={2.4} style={{ color: "var(--success)" }} />
+            <span style={{ fontSize: 13.5, color: "var(--text-primary)" }}>{toastMsg}</span>
+          </div>
+        )}
+
+        {/* Demo Dock */}
+        {!showOnb && <DemoDock rec={rec} onStart={startRec} onStop={stopRec} onError={triggerError} onSettings={() => openSettings("engine")} onHistory={() => openSettings("history")} onReplay={() => setShowOnb(true)} onTray={() => setTrayOpen((o) => !o)} />}
+      </div>
+    </div>
+  );
+}
+
+function WindowFrame({ children, onClose, z = 90 }) {
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const drag = useRef(null);
+  useEffect(() => {
+    const move = (e) => { if (drag.current) setPos({ x: e.clientX - drag.current.x, y: e.clientY - drag.current.y }); };
+    const up = () => { drag.current = null; };
+    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+    return () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+  }, []);
+  return (
+    <div style={{ position: "absolute", inset: 0, zIndex: z, display: "grid", placeItems: "center" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(4,4,8,0.35)" }} />
+      <div style={{ position: "relative", transform: `translate(${pos.x}px, ${pos.y}px)`, animation: "qt-pop-in 200ms var(--ease)" }}>
+        <div onMouseDown={(e) => { drag.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }; }} style={{ position: "absolute", top: 0, left: 0, right: 0, height: 52, cursor: "grab", zIndex: 1 }} />
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function DemoDock({ rec, onStart, onStop, onError, onSettings, onHistory, onReplay, onTray }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div style={{ position: "absolute", left: 24, bottom: 24, zIndex: 95, fontFamily: "var(--font-sans)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: open ? "8px 10px" : 8, background: "var(--bg-overlay)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid var(--border-strong)", borderRadius: "var(--r-md)", boxShadow: "var(--sh-pop)" }}>
+        <button onClick={() => setOpen((o) => !o)} title="Démo" style={{ display: "grid", placeItems: "center", width: 28, height: 28, borderRadius: 7, border: "none", cursor: "pointer", background: "var(--accent-soft)", color: "var(--accent)" }}>
+          <Icon name="Wand2" size={15} />
+        </button>
+        {open && (
+          <React.Fragment>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--text-tertiary)" }}>Démo</span>
+            <span style={{ width: 1, height: 18, background: "var(--border-strong)" }} />
+            {rec === "idle" || rec === "error"
+              ? <DBtn icon="Mic" onClick={onStart}>Dicter</DBtn>
+              : rec === "recording"
+                ? <DBtn icon="Square" onClick={onStop} accent>Transcrire</DBtn>
+                : <DBtn icon="Loader" disabled>…</DBtn>}
+            <DBtn icon="TriangleAlert" onClick={onError}>Erreur</DBtn>
+            <span style={{ width: 1, height: 18, background: "var(--border-strong)" }} />
+            <DBtn icon="Menu" onClick={onTray}>Tray</DBtn>
+            <DBtn icon="Settings" onClick={onSettings}>Réglages</DBtn>
+            <DBtn icon="History" onClick={onHistory}>Historique</DBtn>
+            <DBtn icon="RefreshCw" onClick={onReplay}>Intro</DBtn>
+          </React.Fragment>
+        )}
+      </div>
+      {open && <div style={{ marginTop: 6, paddingLeft: 4, fontSize: 11, color: "var(--text-tertiary)" }}>Astuce : <span style={{ fontFamily: "var(--font-mono)" }}>⌘⇧Espace</span> pour dicter</div>}
+    </div>
+  );
+}
+
+function DBtn({ icon, children, onClick, accent, disabled }) {
+  const [h, setH] = useState(false);
+  return (
+    <button onClick={onClick} disabled={disabled} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)} style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 28, padding: "0 10px", borderRadius: 7, border: "1px solid", borderColor: h ? "var(--border-strong)" : "transparent", background: h ? "var(--bg-elevated)" : "transparent", color: accent ? "var(--live)" : (h ? "var(--text-primary)" : "var(--text-secondary)"), fontSize: 12.5, fontWeight: 500, cursor: disabled ? "default" : "pointer", fontFamily: "var(--font-sans)", opacity: disabled ? 0.5 : 1 }}>
+      <Icon name={icon} size={14} /> {children}
+    </button>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

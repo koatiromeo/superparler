@@ -1,0 +1,78 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "productName": "SuperParler",
+  "version": "0.1.0",
+  "identifier": "com.nemaleu.superparler",
+  "build": {
+    "beforeDevCommand": "cd ../src && npm run dev",
+    "beforeBuildCommand": "cd ../src && npm run build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../src/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "SuperParler — Réglages",
+        "width": 680,
+        "height": 540,
+        "minWidth": 560,
+        "minHeight": 420,
+        "resizable": true,
+        "center": true,
+        "visible": false
+      }
+    ],
+    "trayIcon": {
+      "id": "main-tray",
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true,
+      "menuOnLeftClick": false,
+      "tooltip": "SuperParler"
+    },
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [],
+    "externalBin": [],
+    "category": "Utility",
+    "shortDescription": "Dictée vocale système offline-first",
+    "longDescription": "SuperParler transforme votre voix en texte injecté directement à l'emplacement du curseur, depuis n'importe quelle application.",
+    "macOS": {
+      "entitlements": "entitlements.plist",
+      "exceptionDomain": "",
+      "frameworks": [],
+      "minimumSystemVersion": "12.0",
+      "signingIdentity": null,
+      "providerShortName": null
+    },
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "",
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
+    },
+    "linux": {
+      "deb": { "depends": ["libasound2", "libwebkit2gtk-4.1-0"] },
+      "rpm": { "depends": ["alsa-lib", "webkit2gtk4.1"] }
+    }
+  },
+  "plugins": {
+    "global-shortcut": {},
+    "clipboard-manager": {},
+    "autostart": {}
+  }
+}

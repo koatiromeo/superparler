@@ -1,0 +1,51 @@
+# Claude Code (invisible dans le repo)
+.claude/
+.claude.json
+.claude.local.json
+.claudeignore
+CLAUDE.md
+CLAUDE.local.md
+**/CLAUDE.md
+**/CLAUDE.local.md
+
+# Rust
+/target/
+**/target/
+Cargo.lock
+
+# Tauri généré
+src-tauri/gen/
+
+# Frontend
+node_modules/
+dist/
+.vite/
+
+# Modèles (lourds)
+models/*.bin
+models/*.gguf
+models/*.onnx
+!models/.gitkeep
+
+# Bundles
+*.app
+*.dmg
+*.msi
+*.exe
+*.AppImage
+*.deb
+*.rpm
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

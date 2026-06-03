@@ -1,0 +1,10 @@
+# Normalize line endings to LF in the repo
+* text=auto eol=lf
+
+# Force binary for these types
+*.png binary
+*.ico binary
+*.icns binary
+*.bin binary
+*.gguf binary
+*.onnx binary
