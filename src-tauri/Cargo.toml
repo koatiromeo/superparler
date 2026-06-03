@@ -46,10 +46,11 @@ toml = "0.8"
 async-trait = "0.1"
 
 [features]
-# local-stt: enables whisper-rs (requires LLVM/libclang — run `make setup` or install LLVM)
-# vad: enables Silero VAD via ort (same LLVM requirement as local-stt)
-local-stt = ["dep:whisper-rs"]
+# vad: Silero VAD via ort — compiles WITHOUT LLVM (ort uses pre-generated bindings + downloads ONNX Runtime)
+# local-stt: whisper-rs local STT — requires LLVM/libclang for bindgen
+default = ["vad"]
 vad = ["dep:voice_activity_detector"]
+local-stt = ["dep:whisper-rs"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

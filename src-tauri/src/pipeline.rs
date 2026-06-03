@@ -3,7 +3,7 @@
 use tauri::{AppHandle, Emitter};
 
 use crate::{
-    audio::{capture::AudioRecorder, vad},
+    audio::capture::AudioRecorder,
     enhance,
     error::{AppError, Result},
     events::{self, RecordingErrorPayload, RecordingResultPayload},
@@ -101,17 +101,16 @@ async fn run_transcription(state: &AppState, app: &AppHandle) -> Result<()> {
         (samples, guard.config.clone())
     };
 
-    // VAD: trim leading/trailing silence
-    let trimmed = vad::trim_silence(&samples)?;
-    if trimmed.is_empty() {
-        tracing::warn!("VAD: no speech detected, skipping transcription");
+    // samples are already VAD-trimmed by AudioRecorder::stop()
+    if samples.is_empty() {
+        tracing::warn!("pipeline: no speech in buffer after VAD — skipping STT");
         reset_state(state, app).await;
         return Ok(());
     }
 
     // STT
     let transcriber = crate::stt::factory::build_transcriber(&config)?;
-    let text = transcriber.transcribe(&trimmed, &config.language).await?;
+    let text = transcriber.transcribe(&samples, &config.language).await?;
     if text.is_empty() {
         tracing::warn!("transcription returned empty text");
         reset_state(state, app).await;
@@ -126,7 +125,7 @@ async fn run_transcription(state: &AppState, app: &AppHandle) -> Result<()> {
     inject::inject_text(&final_text, app).await?;
 
     // Persist
-    let duration_ms = (trimmed.len() as f64 / 16_000.0 * 1000.0) as i64;
+    let duration_ms = (samples.len() as f64 / 16_000.0 * 1000.0) as i64;
     let engine_name = format!("{:?}", config.engine).to_lowercase();
     if let Some(pool) = &state.lock().await.db_pool {
         storage::models::insert_transcription(

@@ -7,7 +7,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, Stream, StreamConfig};
 use std::sync::{Arc, Mutex};
 
-use super::resample;
+use super::{resample, vad};
 use crate::error::{AppError, Result};
 
 /// Handle returned to the caller after the recording thread is ready.
@@ -107,6 +107,7 @@ impl AudioRecorder {
                     Ok(Vec::new())
                 } else {
                     resample::to_16khz_mono(&raw, sample_rate, channels)
+                        .and_then(|mono| vad::trim_silence(&mono))
                 };
 
                 samples_tx.send(result).ok();
