@@ -57,10 +57,9 @@ pub async fn update_settings(
     let new_hotkey = new_config.hotkey.clone();
     drop(guard);
 
-    // Re-register hotkey if it changed
+    // Re-register hotkey if string changed (reregister() unregisters old first)
     if hotkey_changed {
-        hotkey::unregister_all(&app)?;
-        hotkey::register_hotkey(&app, &new_hotkey).await?;
+        hotkey::reregister(&app, &new_hotkey).await?;
     }
 
     tracing::info!("settings updated and saved");

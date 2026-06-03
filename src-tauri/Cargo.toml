@@ -18,6 +18,10 @@ path = "src/main.rs"
 name = "record_test"
 path = "src/bin/record_test.rs"
 
+[[bin]]
+name = "inject_test"
+path = "src/bin/inject_test.rs"
+
 [dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-global-shortcut = "2"
@@ -44,6 +48,7 @@ keyring = "3"
 directories = "6"
 toml = "0.8"
 async-trait = "0.1"
+arboard = "3"
 
 [features]
 # vad: Silero VAD via ort — compiles WITHOUT LLVM (ort uses pre-generated bindings + downloads ONNX Runtime)
