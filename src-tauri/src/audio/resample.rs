@@ -38,7 +38,7 @@ pub fn to_16khz_mono(samples: &[f32], source_rate: u32, channels: u16) -> Result
         .map_err(|e| AppError::AudioStream(format!("resampler init: {e}")))?;
 
     // Pad input to multiple of chunk_size
-    let padded_len = ((mono.len() + chunk_size - 1) / chunk_size) * chunk_size;
+    let padded_len = mono.len().div_ceil(chunk_size) * chunk_size;
     let mut padded = mono;
     padded.resize(padded_len, 0.0);
 

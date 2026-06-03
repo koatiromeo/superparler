@@ -3,7 +3,7 @@
 
 use superparler_lib::{
     config::{AppConfig, Engine},
-    stt::{factory::build_transcriber, Transcriber},
+    stt::factory::build_transcriber,
 };
 
 /// Test that factory returns Err for local engine when model is missing

@@ -27,6 +27,15 @@ pub enum Engine {
     Groq,
 }
 
+impl Engine {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Engine::Local => "local",
+            Engine::Groq => "groq",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum RecordingMode {
