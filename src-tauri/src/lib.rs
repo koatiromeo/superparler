@@ -20,6 +20,16 @@ use commands::{engine, history, recording, settings, system};
 use state::AppState;
 
 pub fn run() {
+    // Single-instance guard: TcpListener stays open for the lifetime of run().
+    // If the port is already bound, another instance is running — exit silently.
+    let _instance_guard = match std::net::TcpListener::bind("127.0.0.1:57321") {
+        Ok(l) => l,
+        Err(_) => {
+            eprintln!("SuperParler est déjà en cours d'exécution.");
+            std::process::exit(0);
+        }
+    };
+
     tracing_subscriber::fmt()
         // INVARIANT: "superparler=info" is a valid constant directive string
         .with_env_filter(

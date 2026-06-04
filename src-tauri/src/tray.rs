@@ -114,7 +114,7 @@ fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
     match event.id.as_ref() {
         "quit" => {
             tracing::info!("user quit via tray menu");
-            app.exit(0);
+            std::process::exit(0);
         }
         "settings" | "history" => {
             open_or_create_main(app);
