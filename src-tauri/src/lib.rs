@@ -1,4 +1,4 @@
-use tauri::Manager;
+use tauri::{LogicalPosition, Manager};
 use tauri_plugin_autostart::ManagerExt;
 use tracing_subscriber::EnvFilter;
 
@@ -53,6 +53,29 @@ pub fn run() {
                         tracing::warn!("autostart disable failed: {e}");
                     }
                 }
+            }
+
+            // Position overlay at center-bottom of the primary monitor.
+            // visible:true + focus:false in tauri.conf.json means the window is already
+            // shown without stealing focus; we only need to move it to the right position.
+            if let Some(overlay) = app.get_webview_window("overlay") {
+                if let Ok(Some(monitor)) = overlay.primary_monitor() {
+                    let scale = monitor.scale_factor();
+                    let mon_w = monitor.size().width as f64 / scale;
+                    let mon_h = monitor.size().height as f64 / scale;
+                    let win_w = 400.0_f64;
+                    let win_h = 120.0_f64;
+                    let x = (mon_w - win_w) / 2.0;
+                    let y = mon_h - win_h - 80.0; // 80 px above taskbar
+                    let _ = overlay.set_position(LogicalPosition::new(x, y));
+                    tracing::info!(x, y, "overlay positioned center-bottom");
+                }
+
+                // macOS: set NSWindowCollectionBehavior so the overlay stays visible
+                // above fullscreen apps and on all Mission Control spaces.
+                // TODO: implement via objc2 raw window handle — deferred to macOS platform PR.
+                #[cfg(target_os = "macos")]
+                tracing::debug!("macOS: NSWindowCollectionBehavior not yet set (fullscreen overlay pending)");
             }
 
             // Register hotkey from config

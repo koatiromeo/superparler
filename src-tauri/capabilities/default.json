@@ -2,7 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "SuperParler default capabilities — desktop (all platforms)",
-  "windows": ["main"],
+  "windows": ["main", "overlay"],
   "permissions": [
     "core:default",
     "core:event:default",
@@ -17,6 +17,8 @@
     "clipboard-manager:allow-read-text",
     "autostart:allow-enable",
     "autostart:allow-disable",
-    "autostart:allow-is-enabled"
+    "autostart:allow-is-enabled",
+    "core:window:allow-set-ignore-cursor-events",
+    "core:window:allow-set-position"
   ]
 }

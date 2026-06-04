@@ -9,6 +9,11 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  /* Prevent default context menu and text selection drag in Tauri window */
   [data-tauri-drag-region] { user-select: none; cursor: move; }
+}
+
+/* HUD waveform bars */
+@keyframes wave-bar {
+  0%   { transform: scaleY(0.25); }
+  100% { transform: scaleY(1); }
 }
