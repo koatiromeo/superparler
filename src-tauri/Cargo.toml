@@ -5,6 +5,7 @@ edition = "2024"
 rust-version = "1.85"
 description = "Desktop dictation app — Tauri 2 / Rust"
 license = "MIT"
+default-run = "superparler"
 
 [lib]
 name = "superparler_lib"

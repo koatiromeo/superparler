@@ -17,8 +17,7 @@ export default defineConfig({
     sourcemap: !!process.env.TAURI_DEBUG,
     rollupOptions: {
       input: {
-        main:    resolve(__dirname, 'index.html'),
-        overlay: resolve(__dirname, 'overlay.html'),
+        main: resolve(__dirname, 'index.html'),
       },
     },
   },
