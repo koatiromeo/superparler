@@ -166,7 +166,11 @@ mod tests {
             .samples::<f32>()
             .map(|s| s.expect("read sample"))
             .collect();
-        assert_eq!(read_back.len(), n, "sample count must match after round-trip");
+        assert_eq!(
+            read_back.len(),
+            n,
+            "sample count must match after round-trip"
+        );
         // First and last samples should be preserved within f32 precision
         assert!((read_back[0] - samples[0]).abs() < 1e-6);
         assert!((read_back[n - 1] - samples[n - 1]).abs() < 1e-6);
@@ -186,7 +190,10 @@ mod tests {
         let key = GroqWhisper::get_api_key();
         unsafe { std::env::remove_var("GROQ_API_KEY") };
         // Either keyring had a real key (priority) or env fallback was used — both OK.
-        assert!(key.is_ok(), "get_api_key must succeed when GROQ_API_KEY is set");
+        assert!(
+            key.is_ok(),
+            "get_api_key must succeed when GROQ_API_KEY is set"
+        );
     }
 
     /// Groq API connectivity test — sends a synthetic WAV (sine + noise at speech frequencies).
@@ -236,8 +243,8 @@ mod tests {
         );
 
         // Read the WAV written by record_test (16kHz, mono, f32)
-        let mut reader = hound::WavReader::open(&wav_path)
-            .unwrap_or_else(|e| panic!("Cannot open WAV: {e}"));
+        let mut reader =
+            hound::WavReader::open(&wav_path).unwrap_or_else(|e| panic!("Cannot open WAV: {e}"));
         let spec = reader.spec();
         println!(
             "WAV: {}Hz, {} ch, {:?}, {} samples ({:.1}s)",

@@ -57,7 +57,11 @@ pub async fn insert_transcription(
     })
 }
 
-pub async fn list_transcriptions(pool: &SqlitePool, limit: i64, offset: i64) -> Result<Vec<Transcription>> {
+pub async fn list_transcriptions(
+    pool: &SqlitePool,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<Transcription>> {
     sqlx::query_as::<_, Transcription>(
         "SELECT id, created_at, text, duration_ms, engine, language, target_app, enhanced
          FROM transcriptions ORDER BY created_at DESC LIMIT ? OFFSET ?",

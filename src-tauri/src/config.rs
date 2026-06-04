@@ -6,7 +6,7 @@ use tauri::AppHandle;
 use crate::error::{AppError, Result};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", default)]
 pub struct AppConfig {
     pub engine: Engine,
     pub local_model_path: String,
@@ -86,16 +86,19 @@ impl AppConfig {
     }
 
     pub fn load(app: &AppHandle) -> Result<Self> {
-        let path = Self::config_path(app).ok_or_else(|| AppError::Config("cannot determine config dir".to_string()))?;
+        let path = Self::config_path(app)
+            .ok_or_else(|| AppError::Config("cannot determine config dir".to_string()))?;
         if !path.exists() {
             return Ok(Self::default());
         }
-        let content = std::fs::read_to_string(&path).map_err(|e| AppError::Config(e.to_string()))?;
+        let content =
+            std::fs::read_to_string(&path).map_err(|e| AppError::Config(e.to_string()))?;
         toml::from_str(&content).map_err(|e| AppError::Config(e.to_string()))
     }
 
     pub fn save(&self, app: &AppHandle) -> Result<()> {
-        let path = Self::config_path(app).ok_or_else(|| AppError::Config("cannot determine config dir".to_string()))?;
+        let path = Self::config_path(app)
+            .ok_or_else(|| AppError::Config("cannot determine config dir".to_string()))?;
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(|e| AppError::Config(e.to_string()))?;
         }

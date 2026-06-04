@@ -3,8 +3,8 @@ use tauri::State;
 
 use crate::{
     error::{AppError, Result},
-    stt::factory,
     state::AppState,
+    stt::factory,
 };
 
 #[derive(Debug, Serialize)]
@@ -71,8 +71,8 @@ pub async fn set_groq_key(key: String, _state: State<'_, AppState>) -> Result<()
         return Err(AppError::Keyring("API key must not be empty".to_string()));
     }
     // service="superparler", account="groq" — must match stt/groq.rs KEYRING_* constants
-    let entry = keyring::Entry::new("superparler", "groq")
-        .map_err(|e| AppError::Keyring(e.to_string()))?;
+    let entry =
+        keyring::Entry::new("superparler", "groq").map_err(|e| AppError::Keyring(e.to_string()))?;
     entry
         .set_password(key.trim())
         .map_err(|e| AppError::Keyring(format!("keyring write: {e}")))?;

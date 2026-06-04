@@ -29,7 +29,11 @@ async fn test_factory_groq_builds_ok() {
         ..AppConfig::default()
     };
     let result = build_transcriber(&config);
-    assert!(result.is_ok(), "Groq factory should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Groq factory should succeed: {:?}",
+        result.err()
+    );
 }
 
 /// Test audio resample passthrough (16kHz mono → 16kHz mono)

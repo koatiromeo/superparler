@@ -95,7 +95,9 @@ impl Enhancer for GroqLlm {
         if !response.status().is_success() {
             let status = response.status();
             let body_text = response.text().await.unwrap_or_default();
-            return Err(AppError::Enhance(format!("Groq LLM API {status}: {body_text}")));
+            return Err(AppError::Enhance(format!(
+                "Groq LLM API {status}: {body_text}"
+            )));
         }
 
         let chat: ChatResponse = response
@@ -113,7 +115,10 @@ impl Enhancer for GroqLlm {
             .trim()
             .to_string();
 
-        tracing::info!(enhanced_len = enhanced.len(), "Groq LLM enhancement complete");
+        tracing::info!(
+            enhanced_len = enhanced.len(),
+            "Groq LLM enhancement complete"
+        );
         Ok(enhanced)
     }
 }
@@ -134,7 +139,10 @@ mod tests {
         unsafe { std::env::set_var("GROQ_API_KEY", "test_key_enhance") };
         let key = GroqLlm::get_api_key();
         unsafe { std::env::remove_var("GROQ_API_KEY") };
-        assert!(key.is_ok(), "get_api_key must succeed when GROQ_API_KEY is set");
+        assert!(
+            key.is_ok(),
+            "get_api_key must succeed when GROQ_API_KEY is set"
+        );
     }
 
     #[tokio::test]

@@ -44,9 +44,9 @@ mod imp {
 
         // SAFETY: if the lock is poisoned a previous thread panicked inside the
         // cache write below — that's a bug we want to surface, not swallow.
-        let mut guard = cache.lock().map_err(|_| {
-            AppError::ModelLoad("whisper context cache mutex poisoned".to_string())
-        })?;
+        let mut guard = cache
+            .lock()
+            .map_err(|_| AppError::ModelLoad("whisper context cache mutex poisoned".to_string()))?;
 
         if let Some(ctx) = guard.get(model_path) {
             tracing::debug!(path = model_path, "whisper: reusing cached model context");
@@ -58,7 +58,10 @@ mod imp {
             return Err(AppError::ModelNotFound(model_path.to_string()));
         }
 
-        tracing::info!(path = model_path, "loading whisper model (first use, may take a few seconds)");
+        tracing::info!(
+            path = model_path,
+            "loading whisper model (first use, may take a few seconds)"
+        );
         let ctx = WhisperContext::new_with_params(model_path, WhisperContextParameters::default())
             .map_err(|e| AppError::ModelLoad(format!("whisper context: {e}")))?;
 
@@ -78,7 +81,10 @@ mod imp {
     impl LocalWhisper {
         pub fn new(model_path: &str) -> Result<Self> {
             let ctx = get_or_load_context(model_path)?;
-            Ok(Self { ctx, model_path: model_path.to_string() })
+            Ok(Self {
+                ctx,
+                model_path: model_path.to_string(),
+            })
         }
     }
 
@@ -201,8 +207,8 @@ mod tests {
         );
 
         // Find the model
-        let model_path = std::env::var("WHISPER_MODEL")
-            .unwrap_or_else(|_| "models/ggml-small.bin".to_string());
+        let model_path =
+            std::env::var("WHISPER_MODEL").unwrap_or_else(|_| "models/ggml-small.bin".to_string());
         assert!(
             std::path::Path::new(&model_path).exists(),
             "model not found at {model_path}\nRun: make models"
@@ -222,9 +228,7 @@ mod tests {
         );
 
         let samples: Vec<f32> = match spec.sample_format {
-            hound::SampleFormat::Float => {
-                reader.samples::<f32>().map(|s| s.unwrap()).collect()
-            }
+            hound::SampleFormat::Float => reader.samples::<f32>().map(|s| s.unwrap()).collect(),
             hound::SampleFormat::Int => reader
                 .samples::<i16>()
                 .map(|s| s.unwrap() as f32 / i16::MAX as f32)

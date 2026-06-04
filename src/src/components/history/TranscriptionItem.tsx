@@ -27,7 +27,7 @@ export function TranscriptionItem({ transcription: t, onDelete }: Props) {
       <div className="mt-1.5 flex items-center justify-between">
         <span className="text-xs text-gray-400 flex items-center gap-1.5 flex-wrap">
           {date} · {duration}s · {t.engine}
-          {t.enhanced === 1 && (
+          {t.enhanced !== 0 && (
             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
               ✨ Reformulé
             </span>

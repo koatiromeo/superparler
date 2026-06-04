@@ -28,6 +28,7 @@ test: test-rust test-front
 
 test-rust:
 	cargo test --manifest-path src-tauri/Cargo.toml --lib
+	cargo test --manifest-path src-tauri/Cargo.toml --test pipeline_test
 
 test-front:
 	cd src && npm run typecheck && npm run lint

@@ -1,4 +1,4 @@
-use super::{groq::GroqWhisper, local, Transcriber};
+use super::{Transcriber, groq::GroqWhisper, local};
 use crate::{
     config::{AppConfig, Engine},
     error::Result,
@@ -25,9 +25,15 @@ mod tests {
 
     #[test]
     fn test_factory_groq_builds_ok() {
-        let config = AppConfig { engine: Engine::Groq, ..AppConfig::default() };
+        let config = AppConfig {
+            engine: Engine::Groq,
+            ..AppConfig::default()
+        };
         let result = build_transcriber(&config);
-        assert!(result.is_ok(), "Groq factory should succeed; key checked at transcribe time");
+        assert!(
+            result.is_ok(),
+            "Groq factory should succeed; key checked at transcribe time"
+        );
     }
 
     #[test]
@@ -38,6 +44,9 @@ mod tests {
             ..AppConfig::default()
         };
         let result = build_transcriber(&config);
-        assert!(result.is_err(), "factory should fail for missing/unavailable local model");
+        assert!(
+            result.is_err(),
+            "factory should fail for missing/unavailable local model"
+        );
     }
 }

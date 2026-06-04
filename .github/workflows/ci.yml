@@ -45,9 +45,15 @@ jobs:
         working-directory: src-tauri
         run: cargo clippy -- -D warnings
 
-      - name: cargo test
+      - name: cargo test --lib
         working-directory: src-tauri
         run: cargo test --lib
+        env:
+          RUST_LOG: debug
+
+      - name: cargo test --test pipeline_test
+        working-directory: src-tauri
+        run: cargo test --test pipeline_test
         env:
           RUST_LOG: debug
 

@@ -119,7 +119,10 @@ impl AudioRecorder {
             .recv()
             .map_err(|_| AppError::AudioStream("audio thread died before ready".to_string()))??;
 
-        Ok(Self { stop_tx, samples_rx })
+        Ok(Self {
+            stop_tx,
+            samples_rx,
+        })
     }
 
     /// Stop the stream and return 16 kHz mono f32 samples (blocking, waits for thread).
@@ -127,9 +130,9 @@ impl AudioRecorder {
         self.stop_tx
             .send(())
             .map_err(|_| AppError::AudioStream("audio thread already gone".to_string()))?;
-        self.samples_rx
-            .recv()
-            .map_err(|_| AppError::AudioStream("samples channel closed before result".to_string()))?
+        self.samples_rx.recv().map_err(|_| {
+            AppError::AudioStream("samples channel closed before result".to_string())
+        })?
     }
 }
 
@@ -168,8 +171,10 @@ fn build_stream(
             .build_input_stream(
                 &cfg,
                 move |data: &[u16], _| {
-                    let f: Vec<f32> =
-                        data.iter().map(|&s| (s as f32 / u16::MAX as f32) * 2.0 - 1.0).collect();
+                    let f: Vec<f32> = data
+                        .iter()
+                        .map(|&s| (s as f32 / u16::MAX as f32) * 2.0 - 1.0)
+                        .collect();
                     push_f32(&buffer, &f);
                 },
                 err_fn,

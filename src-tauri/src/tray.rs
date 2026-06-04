@@ -1,8 +1,8 @@
 use tauri::{
+    App, AppHandle, Manager,
     image::Image,
     menu::{Menu, MenuEvent, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    App, AppHandle, Manager,
 };
 
 use crate::{
@@ -24,8 +24,7 @@ pub fn setup_tray(app: &mut App, config: &AppConfig) -> tauri::Result<()> {
     let toggle_text = format!("Démarrer la dictée  {hotkey_label}");
     let toggle = MenuItem::with_id(app, "toggle", &toggle_text, true, None::<&str>)?;
 
-    let hotkey_info =
-        MenuItem::with_id(app, "hotkey_info", &hotkey_label, false, None::<&str>)?;
+    let hotkey_info = MenuItem::with_id(app, "hotkey_info", &hotkey_label, false, None::<&str>)?;
     let engine_text = format!("Moteur : {}", config.engine.as_str());
     let engine_info = MenuItem::with_id(app, "engine_info", &engine_text, false, None::<&str>)?;
 

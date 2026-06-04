@@ -22,7 +22,13 @@ use state::AppState;
 pub fn run() {
     tracing_subscriber::fmt()
         // INVARIANT: "superparler=info" is a valid constant directive string
-        .with_env_filter(EnvFilter::from_default_env().add_directive("superparler=info".parse().expect("constant directive is valid")))
+        .with_env_filter(
+            EnvFilter::from_default_env().add_directive(
+                "superparler=info"
+                    .parse()
+                    .expect("constant directive is valid"),
+            ),
+        )
         .init();
 
     tauri::Builder::default()
@@ -75,7 +81,9 @@ pub fn run() {
                 // above fullscreen apps and on all Mission Control spaces.
                 // TODO: implement via objc2 raw window handle — deferred to macOS platform PR.
                 #[cfg(target_os = "macos")]
-                tracing::debug!("macOS: NSWindowCollectionBehavior not yet set (fullscreen overlay pending)");
+                tracing::debug!(
+                    "macOS: NSWindowCollectionBehavior not yet set (fullscreen overlay pending)"
+                );
             }
 
             // Register hotkey from config

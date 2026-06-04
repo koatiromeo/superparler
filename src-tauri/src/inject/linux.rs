@@ -20,17 +20,13 @@ pub fn paste() -> Result<()> {
     match try_enigo_paste() {
         Ok(()) => Ok(()),
         Err(enigo_err) => {
-            let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok()
-                && std::env::var("DISPLAY").is_err();
+            let is_wayland =
+                std::env::var("WAYLAND_DISPLAY").is_ok() && std::env::var("DISPLAY").is_err();
 
             if is_wayland {
-                tracing::warn!(
-                    "Wayland detected, enigo failed ({enigo_err}); trying ydotool"
-                );
+                tracing::warn!("Wayland detected, enigo failed ({enigo_err}); trying ydotool");
             } else {
-                tracing::warn!(
-                    "enigo paste failed ({enigo_err}); trying ydotool fallback"
-                );
+                tracing::warn!("enigo paste failed ({enigo_err}); trying ydotool fallback");
             }
 
             try_ydotool_paste().map_err(|ydotool_err| {
@@ -84,7 +80,9 @@ fn try_ydotool_paste() -> Result<()> {
     } else {
         Err(AppError::Inject(format!(
             "ydotool exited with {}",
-            status.code().map_or("signal".to_string(), |c| c.to_string())
+            status
+                .code()
+                .map_or("signal".to_string(), |c| c.to_string())
         )))
     }
 }

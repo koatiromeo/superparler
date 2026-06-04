@@ -148,7 +148,10 @@ mod tests {
     fn test_trim_pure_silence() {
         let silence = vec![0.0f32; 16_000]; // 1 s silence
         let result = trim_silence(&silence).unwrap();
-        assert!(result.is_empty(), "pure silence should produce empty output");
+        assert!(
+            result.is_empty(),
+            "pure silence should produce empty output"
+        );
     }
 
     #[test]
@@ -158,18 +161,24 @@ mod tests {
         // We test both behaviours to ensure no panic and correct contract per VAD type.
 
         let mut samples = vec![0.0f32; 16_000]; // 1 s silence
-        samples.extend(vec![0.8f32; 8_000]);    // 0.5 s "signal"
-        samples.extend(vec![0.0f32; 8_000]);    // 0.5 s silence
+        samples.extend(vec![0.8f32; 8_000]); // 0.5 s "signal"
+        samples.extend(vec![0.0f32; 8_000]); // 0.5 s silence
 
         let result = trim_silence(&samples).unwrap();
 
         // Output must never be longer than input — basic sanity regardless of VAD type.
-        assert!(result.len() <= samples.len(), "output must not exceed input length");
+        assert!(
+            result.len() <= samples.len(),
+            "output must not exceed input length"
+        );
 
         // Energy fallback: loud signal passes the RMS threshold, silence is trimmed.
         #[cfg(not(feature = "vad"))]
         {
-            assert!(!result.is_empty(), "energy VAD: 0.8f32 signal should be kept");
+            assert!(
+                !result.is_empty(),
+                "energy VAD: 0.8f32 signal should be kept"
+            );
             assert!(
                 result.len() < samples.len() / 2,
                 "energy VAD: 1 s leading silence should be trimmed (got {} / {})",

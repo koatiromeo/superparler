@@ -97,7 +97,10 @@ async fn handle_press(
         }
         RecordingState::Recording => match mode {
             RecordingMode::Toggle => {
-                tracing::info!(hotkey, "hotkey pressed → stop recording (toggle: second press)");
+                tracing::info!(
+                    hotkey,
+                    "hotkey pressed → stop recording (toggle: second press)"
+                );
                 if let Err(e) = crate::pipeline::stop_recording(state, app).await {
                     tracing::error!(hotkey, "hotkey toggle stop failed: {e}");
                 }
@@ -105,7 +108,10 @@ async fn handle_press(
             RecordingMode::PushToTalk => {
                 // In PushToTalk, a second keydown while recording means the key is
                 // being held and the OS is firing key-repeat events — ignore them.
-                tracing::debug!(hotkey, "hotkey key-repeat while recording (push-to-talk) — ignored");
+                tracing::debug!(
+                    hotkey,
+                    "hotkey key-repeat while recording (push-to-talk) — ignored"
+                );
             }
         },
         RecordingState::Transcribing => {
@@ -142,7 +148,10 @@ async fn handle_release(
         }
         RecordingMode::Toggle => {
             // Toggle mode: key release is not meaningful (stop happens on press)
-            tracing::debug!(hotkey, "hotkey released (toggle mode) — no action on release");
+            tracing::debug!(
+                hotkey,
+                "hotkey released (toggle mode) — no action on release"
+            );
         }
     }
 }
@@ -163,7 +172,11 @@ mod tests {
         ];
         for hk in &valid {
             let result: std::result::Result<Shortcut, _> = hk.parse();
-            assert!(result.is_ok(), "should parse: {hk} — got: {:?}", result.err());
+            assert!(
+                result.is_ok(),
+                "should parse: {hk} — got: {:?}",
+                result.err()
+            );
         }
     }
 

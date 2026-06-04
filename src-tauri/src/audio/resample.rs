@@ -50,7 +50,11 @@ pub fn to_16khz_mono(samples: &[f32], source_rate: u32, channels: u16) -> Result
         output.extend_from_slice(&resampled[0]);
     }
 
-    tracing::debug!(input_samples = padded_len, output_samples = output.len(), "resampled audio");
+    tracing::debug!(
+        input_samples = padded_len,
+        output_samples = output.len(),
+        "resampled audio"
+    );
     Ok(output)
 }
 
@@ -68,7 +72,9 @@ mod tests {
     #[test]
     fn test_resample_stereo_to_mono() {
         // Stereo 16 kHz — should average channels and return same length
-        let samples: Vec<f32> = (0..3200).map(|i| if i % 2 == 0 { 1.0 } else { -1.0 }).collect();
+        let samples: Vec<f32> = (0..3200)
+            .map(|i| if i % 2 == 0 { 1.0 } else { -1.0 })
+            .collect();
         let result = to_16khz_mono(&samples, 16_000, 2).unwrap();
         // Mono: half the samples
         assert_eq!(result.len(), 1600);
@@ -81,7 +87,9 @@ mod tests {
     #[test]
     fn test_resample_44100_to_16000() {
         // 1 second at 44.1 kHz → expect ~16000 samples at 16 kHz
-        let samples: Vec<f32> = (0..44100).map(|i| (i as f32 * 440.0 / 44100.0).sin()).collect();
+        let samples: Vec<f32> = (0..44100)
+            .map(|i| (i as f32 * 440.0 / 44100.0).sin())
+            .collect();
         let result = to_16khz_mono(&samples, 44_100, 1).unwrap();
         // Rubato sinc resampler adds filter-delay padding; allow ±500 samples
         let expected: usize = 16000;

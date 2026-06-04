@@ -3,12 +3,14 @@ pub mod models;
 
 #[cfg(test)]
 mod tests {
-    use sqlx::SqlitePool;
     use crate::storage::models;
+    use sqlx::SqlitePool;
 
     /// Open an in-memory SQLite pool, run migrations, then test insert/select/delete.
     async fn test_pool() -> SqlitePool {
-        let pool = SqlitePool::connect("sqlite::memory:").await.expect("in-memory pool");
+        let pool = SqlitePool::connect("sqlite::memory:")
+            .await
+            .expect("in-memory pool");
         sqlx::migrate!("./migrations")
             .run(&pool)
             .await
@@ -28,7 +30,9 @@ mod tests {
         assert_eq!(t.engine, "local");
         assert_eq!(t.enhanced, 0);
 
-        let rows = models::list_transcriptions(&pool, 10, 0).await.expect("list");
+        let rows = models::list_transcriptions(&pool, 10, 0)
+            .await
+            .expect("list");
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].id, t.id);
     }
@@ -40,16 +44,24 @@ mod tests {
             .await
             .expect("insert");
 
-        models::delete_transcription(&pool, &t.id).await.expect("delete");
-        let rows = models::list_transcriptions(&pool, 10, 0).await.expect("list after delete");
+        models::delete_transcription(&pool, &t.id)
+            .await
+            .expect("delete");
+        let rows = models::list_transcriptions(&pool, 10, 0)
+            .await
+            .expect("list after delete");
         assert!(rows.is_empty());
     }
 
     #[tokio::test]
     async fn test_clear_all() {
         let pool = test_pool().await;
-        models::insert_transcription(&pool, "A", 100, "local", "fr", false).await.unwrap();
-        models::insert_transcription(&pool, "B", 200, "groq", "en", true).await.unwrap();
+        models::insert_transcription(&pool, "A", 100, "local", "fr", false)
+            .await
+            .unwrap();
+        models::insert_transcription(&pool, "B", 200, "groq", "en", true)
+            .await
+            .unwrap();
 
         models::clear_all(&pool).await.expect("clear");
         let rows = models::list_transcriptions(&pool, 10, 0).await.unwrap();

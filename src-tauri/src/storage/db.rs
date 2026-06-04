@@ -1,8 +1,11 @@
 use directories::ProjectDirs;
-use sqlx::{migrate::MigrateDatabase, SqlitePool};
+use sqlx::{SqlitePool, migrate::MigrateDatabase};
 use tauri::{AppHandle, Manager};
 
-use crate::{error::{AppError, Result}, state::AppState};
+use crate::{
+    error::{AppError, Result},
+    state::AppState,
+};
 
 pub async fn initialize(app: &AppHandle) -> Result<()> {
     let db_path = get_db_path()?;
@@ -17,7 +20,10 @@ pub async fn initialize(app: &AppHandle) -> Result<()> {
     let db_url = format!("sqlite:{}", db_path.to_string_lossy());
 
     // Create database file if it doesn't exist
-    if !sqlx::Sqlite::database_exists(&db_url).await.unwrap_or(false) {
+    if !sqlx::Sqlite::database_exists(&db_url)
+        .await
+        .unwrap_or(false)
+    {
         sqlx::Sqlite::create_database(&db_url)
             .await
             .map_err(AppError::Storage)?;

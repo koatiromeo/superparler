@@ -9,8 +9,7 @@ use crate::{
     events::{self, RecordingErrorPayload, RecordingResultPayload},
     inject,
     state::{AppState, RecordingState},
-    storage,
-    tray,
+    storage, tray,
 };
 
 /// Begin audio capture. Emits "recording:started".
@@ -65,7 +64,9 @@ pub async fn start_recording(state: &AppState, app: &AppHandle) -> Result<()> {
                 tracing::error!("recorder.stop() failed: {e}");
                 let _ = app_clone.emit(
                     events::EVT_RECORDING_ERROR,
-                    RecordingErrorPayload { message: e.to_string() },
+                    RecordingErrorPayload {
+                        message: e.to_string(),
+                    },
                 );
                 reset_state(&state_clone, &app_clone).await;
                 return;
@@ -74,7 +75,9 @@ pub async fn start_recording(state: &AppState, app: &AppHandle) -> Result<()> {
                 tracing::error!("spawn_blocking join error: {e}");
                 let _ = app_clone.emit(
                     events::EVT_RECORDING_ERROR,
-                    RecordingErrorPayload { message: e.to_string() },
+                    RecordingErrorPayload {
+                        message: e.to_string(),
+                    },
                 );
                 reset_state(&state_clone, &app_clone).await;
                 return;
@@ -90,7 +93,9 @@ pub async fn start_recording(state: &AppState, app: &AppHandle) -> Result<()> {
             tracing::error!("transcription pipeline failed: {e}");
             let _ = app_clone.emit(
                 events::EVT_RECORDING_ERROR,
-                RecordingErrorPayload { message: e.to_string() },
+                RecordingErrorPayload {
+                    message: e.to_string(),
+                },
             );
             reset_state(&state_clone, &app_clone).await;
         }
@@ -129,7 +134,12 @@ async fn run_transcription(state: &AppState, app: &AppHandle) -> Result<()> {
     // Fix: always emit result so the frontend exits Transcribing state.
     if samples.is_empty() {
         tracing::warn!("pipeline: VAD found no speech — skipping STT");
-        let _ = app.emit(events::EVT_RECORDING_RESULT, RecordingResultPayload { text: String::new() });
+        let _ = app.emit(
+            events::EVT_RECORDING_RESULT,
+            RecordingResultPayload {
+                text: String::new(),
+            },
+        );
         reset_state(state, app).await;
         return Ok(());
     }
@@ -140,14 +150,30 @@ async fn run_transcription(state: &AppState, app: &AppHandle) -> Result<()> {
 
     if text.trim().is_empty() {
         tracing::warn!("STT returned empty text — skipping inject/persist");
-        let _ = app.emit(events::EVT_RECORDING_RESULT, RecordingResultPayload { text: String::new() });
+        let _ = app.emit(
+            events::EVT_RECORDING_RESULT,
+            RecordingResultPayload {
+                text: String::new(),
+            },
+        );
         reset_state(state, app).await;
         return Ok(());
     }
 
-    // Optional LLM enhancement (NoOp by default; GroqLlm planned for v2).
-    let enhancer = enhance::build_enhancer(config.enhance_enabled, &config.enhance_model);
-    let final_text = enhancer.enhance(&text, &config.enhance_prompt).await?;
+    // Optional LLM enhancement — fall back to raw text on error so the transcription
+    // is never silently lost (e.g. missing API key, network failure).
+    let (final_text, was_enhanced) = if config.enhance_enabled {
+        let enhancer = enhance::build_enhancer(true, &config.enhance_model);
+        match enhancer.enhance(&text, &config.enhance_prompt).await {
+            Ok(enhanced) => (enhanced, true),
+            Err(e) => {
+                tracing::warn!(error = %e, "LLM enhance failed — injecting raw transcription");
+                (text, false)
+            }
+        }
+    } else {
+        (text, false)
+    };
 
     inject::inject_text(&final_text, app).await?;
 
@@ -163,7 +189,7 @@ async fn run_transcription(state: &AppState, app: &AppHandle) -> Result<()> {
             duration_ms,
             engine_name,
             &config.language,
-            config.enhance_enabled,
+            was_enhanced,
         )
         .await
         {
@@ -175,8 +201,11 @@ async fn run_transcription(state: &AppState, app: &AppHandle) -> Result<()> {
         tracing::warn!("DB pool not available — transcription not persisted");
     }
 
-    app.emit(events::EVT_RECORDING_RESULT, RecordingResultPayload { text: final_text })
-        .map_err(|e| AppError::Emit(e.to_string()))?;
+    app.emit(
+        events::EVT_RECORDING_RESULT,
+        RecordingResultPayload { text: final_text },
+    )
+    .map_err(|e| AppError::Emit(e.to_string()))?;
 
     reset_state(state, app).await;
     Ok(())

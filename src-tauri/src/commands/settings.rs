@@ -21,6 +21,7 @@ pub struct PartialConfig {
     pub inject_method: Option<InjectMethod>,
     pub enhance_enabled: Option<bool>,
     pub enhance_prompt: Option<String>,
+    pub enhance_model: Option<String>,
     pub launch_at_startup: Option<bool>,
 }
 
@@ -39,18 +40,45 @@ pub async fn update_settings(
     let mut guard = state.lock().await;
     let config = &mut guard.config;
 
-    let hotkey_changed = patch.hotkey.as_deref().map(|h| h != config.hotkey).unwrap_or(false);
+    let hotkey_changed = patch
+        .hotkey
+        .as_deref()
+        .map(|h| h != config.hotkey)
+        .unwrap_or(false);
 
-    if let Some(v) = patch.engine           { config.engine = v; }
-    if let Some(v) = patch.local_model_path { config.local_model_path = v; }
-    if let Some(v) = patch.groq_model       { config.groq_model = v; }
-    if let Some(v) = patch.language         { config.language = v; }
-    if let Some(v) = patch.hotkey           { config.hotkey = v; }
-    if let Some(v) = patch.mode             { config.mode = v; }
-    if let Some(v) = patch.inject_method    { config.inject_method = v; }
-    if let Some(v) = patch.enhance_enabled  { config.enhance_enabled = v; }
-    if let Some(v) = patch.enhance_prompt   { config.enhance_prompt = v; }
-    if let Some(v) = patch.launch_at_startup { config.launch_at_startup = v; }
+    if let Some(v) = patch.engine {
+        config.engine = v;
+    }
+    if let Some(v) = patch.local_model_path {
+        config.local_model_path = v;
+    }
+    if let Some(v) = patch.groq_model {
+        config.groq_model = v;
+    }
+    if let Some(v) = patch.language {
+        config.language = v;
+    }
+    if let Some(v) = patch.hotkey {
+        config.hotkey = v;
+    }
+    if let Some(v) = patch.mode {
+        config.mode = v;
+    }
+    if let Some(v) = patch.inject_method {
+        config.inject_method = v;
+    }
+    if let Some(v) = patch.enhance_enabled {
+        config.enhance_enabled = v;
+    }
+    if let Some(v) = patch.enhance_prompt {
+        config.enhance_prompt = v;
+    }
+    if let Some(v) = patch.enhance_model {
+        config.enhance_model = v;
+    }
+    if let Some(v) = patch.launch_at_startup {
+        config.launch_at_startup = v;
+    }
 
     config.save(&app)?;
     let new_config = config.clone();
