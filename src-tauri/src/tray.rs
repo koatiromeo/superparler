@@ -76,15 +76,38 @@ pub fn setup_tray(app: &mut App, config: &AppConfig) -> tauri::Result<()> {
                 ..
             } = event
             {
-                if let Some(window) = tray.app_handle().get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
+                open_or_create_main(tray.app_handle());
             }
         })
         .build(app)?;
 
     Ok(())
+}
+
+/// Open the settings window if it exists, or create it lazily (no WebView2 at startup).
+pub(crate) fn open_or_create_main(app: &AppHandle) {
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.show();
+        let _ = w.set_focus();
+        return;
+    }
+    match tauri::WebviewWindowBuilder::new(
+        app,
+        "main",
+        tauri::WebviewUrl::App("index.html".into()),
+    )
+    .title("SuperParler — Réglages")
+    .inner_size(680.0, 540.0)
+    .min_inner_size(560.0, 420.0)
+    .resizable(true)
+    .center()
+    .build()
+    {
+        Ok(w) => {
+            let _ = w.set_focus();
+        }
+        Err(e) => tracing::error!("failed to create settings window: {e}"),
+    }
 }
 
 fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
@@ -94,10 +117,7 @@ fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
             app.exit(0);
         }
         "settings" | "history" => {
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
-            }
+            open_or_create_main(app);
         }
         "toggle" => {
             let app = app.clone();

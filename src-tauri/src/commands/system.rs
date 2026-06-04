@@ -1,4 +1,4 @@
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, State};
 use tauri_plugin_autostart::ManagerExt;
 
 use crate::{error::Result, state::AppState};
@@ -30,13 +30,6 @@ pub async fn set_launch_at_startup(
 
 #[tauri::command]
 pub async fn open_settings_window(app: AppHandle) -> Result<()> {
-    if let Some(window) = app.get_webview_window("main") {
-        window
-            .show()
-            .map_err(|e| crate::error::AppError::Config(e.to_string()))?;
-        window
-            .set_focus()
-            .map_err(|e| crate::error::AppError::Config(e.to_string()))?;
-    }
+    crate::tray::open_or_create_main(&app);
     Ok(())
 }

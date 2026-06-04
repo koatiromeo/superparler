@@ -97,6 +97,13 @@ pub fn run() {
             system::set_launch_at_startup,
             system::open_settings_window,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running SuperParler");
+        .build(tauri::generate_context!())
+        .expect("error building SuperParler")
+        .run(|_app, event| {
+            // Prevent the app from exiting when the settings window is closed —
+            // it is a tray-only app; the user quits via the tray menu.
+            if let tauri::RunEvent::ExitRequested { api, .. } = event {
+                api.prevent_exit();
+            }
+        });
 }
