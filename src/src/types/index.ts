@@ -1,13 +1,12 @@
 // Mirror of ALL Rust IPC structs — must stay in sync with src-tauri/src/
 // All fields camelCase to match #[serde(rename_all = "camelCase")]
 
-export type Engine = 'local' | 'groq';
+export type Engine = 'groq';
 export type RecordingMode = 'pushToTalk' | 'toggle';
 export type InjectMethod = 'paste' | 'type';
 
 export interface AppConfig {
   engine: Engine;
-  localModelPath: string;
   groqModel: string;
   language: string;
   hotkey: string;

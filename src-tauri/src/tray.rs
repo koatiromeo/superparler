@@ -145,6 +145,21 @@ fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
     }
 }
 
+/// Show a persistent error tooltip on the tray icon (yellow circle).
+/// Called when the pipeline fails so the user knows something went wrong.
+pub fn show_tray_error(app: &AppHandle, message: &str) {
+    if let Some(tray) = app.tray_by_id("main-tray") {
+        let _ = tray.set_tooltip(Some(&format!("SuperParler — Erreur: {message}")));
+        let _ = tray.set_icon(Some(circle_icon(220, 180, 0, 22)));
+        #[cfg(target_os = "macos")]
+        let _ = tray.set_icon_as_template(false);
+    }
+    if let Some(items) = app.try_state::<TrayItems>() {
+        let _ = items.toggle.set_text("Démarrer la dictée");
+        let _ = items.toggle.set_enabled(true);
+    }
+}
+
 /// Update icon, tooltip, and toggle label to reflect the new recording state.
 /// Called synchronously from pipeline.rs on every state transition.
 pub fn update_tray_state(app: &AppHandle, state: &RecordingState) {

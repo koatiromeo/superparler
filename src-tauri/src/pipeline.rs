@@ -91,6 +91,7 @@ pub async fn start_recording(state: &AppState, app: &AppHandle) -> Result<()> {
 
         if let Err(e) = run_transcription(&state_clone, &app_clone).await {
             tracing::error!("transcription pipeline failed: {e}");
+            tray::show_tray_error(&app_clone, &e.to_string());
             let _ = app_clone.emit(
                 events::EVT_RECORDING_ERROR,
                 RecordingErrorPayload {

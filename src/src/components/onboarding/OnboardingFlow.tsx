@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useSettingsStore } from '../../stores/settings';
 import { HotkeyCapture } from '../settings/HotkeyCapture';
-import { EngineSelector } from '../settings/EngineSelector';
 import { GroqKeyField } from '../settings/GroqKeyField';
 import { Button } from '../shared/Button';
 import { Toggle } from '../shared/Toggle';
-import type { Engine, RecordingMode } from '../../types';
+import type { RecordingMode } from '../../types';
 
 interface Props {
   onComplete: () => void;
@@ -21,7 +20,7 @@ function Progress({ step }: { step: number }) {
         <div
           key={i}
           className={`h-1.5 rounded-full transition-all duration-300 ${
-            i < step ? 'w-6 bg-brand-500' : i === step ? 'w-6 bg-brand-500' : 'w-3 bg-gray-200'
+            i <= step ? 'w-6 bg-brand-500' : 'w-3 bg-gray-200'
           }`}
         />
       ))}
@@ -29,7 +28,6 @@ function Progress({ step }: { step: number }) {
   );
 }
 
-// ── Step 1: Bienvenue ─────────────────────────────────────────────────────────
 function StepWelcome({ onNext }: { onNext: () => void }) {
   return (
     <div className="flex flex-col items-center text-center gap-6 py-4">
@@ -42,9 +40,11 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
         </p>
       </div>
       <ul className="text-sm text-gray-600 space-y-2 text-left">
-        {['Offline-first — aucune donnée ne quitte votre machine',
+        {[
           'Rapide — injecté en moins de 2 secondes avec Groq',
-          'Discret — visible uniquement quand vous dictez'].map(f => (
+          'Précis — whisper-large-v3-turbo',
+          'Discret — visible uniquement dans la barre des tâches',
+        ].map(f => (
           <li key={f} className="flex items-start gap-2">
             <span className="text-brand-500 shrink-0">✓</span>
             {f}
@@ -56,7 +56,6 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
   );
 }
 
-// ── Step 2: Permissions ───────────────────────────────────────────────────────
 function StepPermissions({ onNext }: { onNext: () => void }) {
   return (
     <div className="flex flex-col gap-5">
@@ -66,14 +65,9 @@ function StepPermissions({ onNext }: { onNext: () => void }) {
           SuperParler injecte du texte en simulant Ctrl+V — une seule permission suffit.
         </p>
       </div>
-
       {IS_MAC ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
           <p className="text-sm font-semibold text-amber-800">macOS — Accessibilité requise</p>
-          <p className="text-xs text-amber-700">
-            Pour injecter du texte dans d'autres applications, SuperParler a besoin de
-            l'autorisation Accessibilité.
-          </p>
           <ol className="text-xs text-amber-700 list-decimal list-inside space-y-1">
             <li>Réglages Système → Confidentialité et sécurité → Accessibilité</li>
             <li>Activez SuperParler dans la liste</li>
@@ -87,45 +81,37 @@ function StepPermissions({ onNext }: { onNext: () => void }) {
           </p>
         </div>
       )}
-
       <Button onClick={onNext} className="w-full">
-        {IS_MAC ? 'J\'ai activé l\'accessibilité →' : 'Continuer →'}
+        {IS_MAC ? "J'ai activé l'accessibilité →" : 'Continuer →'}
       </Button>
     </div>
   );
 }
 
-// ── Step 3: Moteur ────────────────────────────────────────────────────────────
 function StepEngine({ onNext }: { onNext: () => void }) {
-  const { config, update } = useSettingsStore();
-  const engine: Engine = config?.engine ?? 'groq';
-
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h2 className="text-lg font-bold text-gray-900">Choisissez votre moteur STT</h2>
+        <h2 className="text-lg font-bold text-gray-900">Configurez Groq</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Groq est idéal pour démarrer — rapide et précis, clé API gratuite.
+          SuperParler utilise Groq pour transcrire votre voix — rapide, précis, clé API gratuite.
         </p>
       </div>
 
-      <EngineSelector value={engine} onChange={e => void update({ engine: e })} />
-
-      {engine === 'groq' && <GroqKeyField />}
-
-      {engine === 'local' && (
-        <p className="text-xs text-amber-600">
-          Le moteur local nécessite LLVM et <code>make models</code> pour télécharger
-          ggml-small.bin (~500 MB). Vous pouvez configurer cela plus tard.
+      <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3">
+        <p className="text-sm font-semibold text-brand-700">⚡ Groq Whisper</p>
+        <p className="text-xs text-brand-600 mt-0.5">
+          Créez un compte sur <span className="font-mono">console.groq.com</span> → API Keys → Create key
         </p>
-      )}
+      </div>
+
+      <GroqKeyField />
 
       <Button onClick={onNext} className="w-full">Continuer →</Button>
     </div>
   );
 }
 
-// ── Step 4: Raccourci ─────────────────────────────────────────────────────────
 function StepHotkey({ onComplete }: { onComplete: () => void }) {
   const { config, update } = useSettingsStore();
   const hotkey = config?.hotkey ?? 'CmdOrCtrl+Shift+Space';
@@ -139,9 +125,7 @@ function StepHotkey({ onComplete }: { onComplete: () => void }) {
           Ce raccourci global déclenche la dictée depuis n'importe quelle application.
         </p>
       </div>
-
       <HotkeyCapture value={hotkey} onChange={h => void update({ hotkey: h })} />
-
       <div className="space-y-2">
         <p className="text-sm font-medium text-gray-700">Mode d'activation</p>
         <Toggle
@@ -153,18 +137,14 @@ function StepHotkey({ onComplete }: { onComplete: () => void }) {
           Sinon : Toggle (1er appui pour démarrer, 2e pour envoyer)
         </p>
       </div>
-
       <Button onClick={onComplete} className="w-full">C'est parti ! 🚀</Button>
     </div>
   );
 }
 
-// ── Main flow ─────────────────────────────────────────────────────────────────
 export function OnboardingFlow({ onComplete }: Props) {
   const [step, setStep] = useState(0);
   const next = () => setStep(s => s + 1);
-
-  // Pre-load settings so engine/hotkey steps can update config
   const { load, config } = useSettingsStore();
   if (!config) { void load(); }
 

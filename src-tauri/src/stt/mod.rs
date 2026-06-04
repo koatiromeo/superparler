@@ -2,7 +2,6 @@ use async_trait::async_trait;
 
 pub mod factory;
 pub mod groq;
-pub mod local;
 
 use crate::error::Result;
 

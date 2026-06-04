@@ -40,9 +40,6 @@ export const clearHistory = (): Promise<void> =>
 export const testEngine = (): Promise<EngineStatus> =>
   invoke('test_engine');
 
-export const listLocalModels = (): Promise<string[]> =>
-  invoke('list_local_models');
-
 export const setGroqKey = (key: string): Promise<void> =>
   invoke('set_groq_key', { key });
 

@@ -9,7 +9,6 @@ use crate::error::{AppError, Result};
 #[serde(rename_all = "camelCase", default)]
 pub struct AppConfig {
     pub engine: Engine,
-    pub local_model_path: String,
     pub groq_model: String,
     pub language: String,
     pub hotkey: String,
@@ -24,16 +23,12 @@ pub struct AppConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum Engine {
-    Local,
     Groq,
 }
 
 impl Engine {
     pub fn as_str(&self) -> &'static str {
-        match self {
-            Engine::Local => "local",
-            Engine::Groq => "groq",
-        }
+        "groq"
     }
 }
 
@@ -54,8 +49,7 @@ pub enum InjectMethod {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            engine: Engine::Local,
-            local_model_path: default_model_path(),
+            engine: Engine::Groq,
             groq_model: "whisper-large-v3-turbo".to_string(),
             language: "fr".to_string(),
             hotkey: "CmdOrCtrl+Shift+Space".to_string(),
@@ -67,16 +61,6 @@ impl Default for AppConfig {
             launch_at_startup: false,
         }
     }
-}
-
-fn default_model_path() -> String {
-    // Try to find models/ relative to the binary location
-    std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|d| d.join("../../models/ggml-small.bin")))
-        .and_then(|p| p.canonicalize().ok())
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|| "models/ggml-small.bin".to_string())
 }
 
 impl AppConfig {

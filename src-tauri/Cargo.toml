@@ -34,7 +34,6 @@ tokio = { version = "1", features = ["full"] }
 cpal = "0.15"
 rubato = "0.15"
 hound = "3"
-whisper-rs = { version = "0.12", optional = true }
 voice_activity_detector = { version = "0.2", optional = true }
 enigo = "0.2"
 reqwest = { version = "0.12", features = ["json", "multipart", "rustls-tls"], default-features = false }
@@ -56,7 +55,6 @@ arboard = "3"
 # local-stt: whisper-rs local STT — requires LLVM/libclang for bindgen
 default = ["vad"]
 vad = ["dep:voice_activity_detector"]
-local-stt = ["dep:whisper-rs"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

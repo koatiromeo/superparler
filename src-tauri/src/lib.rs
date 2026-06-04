@@ -71,6 +71,18 @@ pub fn run() {
                 }
             }
 
+            // Validate STT engine availability at startup — show tray error if broken.
+            {
+                let cfg = config.clone();
+                let handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Err(e) = crate::stt::factory::build_transcriber(&cfg) {
+                        tracing::error!("STT engine unavailable at startup: {e}");
+                        tray::show_tray_error(&handle, &e.to_string());
+                    }
+                });
+            }
+
             // Register hotkey from config
             {
                 let hotkey = config.hotkey.clone();
@@ -102,7 +114,6 @@ pub fn run() {
             history::delete_transcription,
             history::clear_history,
             engine::test_engine,
-            engine::list_local_models,
             engine::set_groq_key,
             system::set_launch_at_startup,
             system::open_settings_window,

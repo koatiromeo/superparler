@@ -13,7 +13,6 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct PartialConfig {
     pub engine: Option<Engine>,
-    pub local_model_path: Option<String>,
     pub groq_model: Option<String>,
     pub language: Option<String>,
     pub hotkey: Option<String>,
@@ -49,9 +48,6 @@ pub async fn update_settings(
     if let Some(v) = patch.engine {
         config.engine = v;
     }
-    if let Some(v) = patch.local_model_path {
-        config.local_model_path = v;
-    }
     if let Some(v) = patch.groq_model {
         config.groq_model = v;
     }
@@ -85,7 +81,6 @@ pub async fn update_settings(
     let new_hotkey = new_config.hotkey.clone();
     drop(guard);
 
-    // Re-register hotkey if string changed (reregister() unregisters old first)
     if hotkey_changed {
         hotkey::reregister(&app, &new_hotkey).await?;
     }
