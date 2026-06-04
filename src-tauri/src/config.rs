@@ -17,6 +17,7 @@ pub struct AppConfig {
     pub inject_method: InjectMethod,
     pub enhance_enabled: bool,
     pub enhance_prompt: String,
+    pub enhance_model: String,
     pub launch_at_startup: bool,
 }
 
@@ -62,6 +63,7 @@ impl Default for AppConfig {
             inject_method: InjectMethod::Paste,
             enhance_enabled: false,
             enhance_prompt: String::new(),
+            enhance_model: "llama-3.3-70b-versatile".to_string(),
             launch_at_startup: false,
         }
     }

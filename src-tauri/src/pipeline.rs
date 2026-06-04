@@ -146,7 +146,7 @@ async fn run_transcription(state: &AppState, app: &AppHandle) -> Result<()> {
     }
 
     // Optional LLM enhancement (NoOp by default; GroqLlm planned for v2).
-    let enhancer = enhance::build_enhancer(config.enhance_enabled, &config.groq_model);
+    let enhancer = enhance::build_enhancer(config.enhance_enabled, &config.enhance_model);
     let final_text = enhancer.enhance(&text, &config.enhance_prompt).await?;
 
     inject::inject_text(&final_text, app).await?;

@@ -3,6 +3,7 @@ use async_trait::async_trait;
 pub mod groq_llm;
 
 use crate::error::Result;
+use groq_llm::GroqLlm;
 
 /// Optional post-transcription text enhancement (reformatting, correction, etc.).
 /// NoOp is the default — enabled only when config.enhance_enabled is true.
@@ -21,11 +22,15 @@ impl Enhancer for NoOp {
     }
 }
 
-pub fn build_enhancer(enabled: bool, _groq_model: &str) -> Box<dyn Enhancer> {
+pub fn build_enhancer(enabled: bool, enhance_model: &str) -> Box<dyn Enhancer> {
     if enabled {
-        // TODO(v2): switch to GroqLlm when enhance feature is complete
-        tracing::warn!("enhance mode requested but GroqLlm enhancer not yet implemented; using NoOp");
-        Box::new(NoOp)
+        match GroqLlm::new(enhance_model.to_string()) {
+            Ok(llm) => Box::new(llm),
+            Err(e) => {
+                tracing::error!("failed to create GroqLlm enhancer: {e}; falling back to NoOp");
+                Box::new(NoOp)
+            }
+        }
     } else {
         Box::new(NoOp)
     }

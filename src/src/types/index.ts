@@ -15,6 +15,7 @@ export interface AppConfig {
   injectMethod: InjectMethod;
   enhanceEnabled: boolean;
   enhancePrompt: string;
+  enhanceModel: string;
   launchAtStartup: boolean;
 }
 

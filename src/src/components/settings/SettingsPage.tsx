@@ -219,7 +219,7 @@ export default function SettingsPage() {
         {/* ── Reformulation ───────────────────────────────────────────── */}
         {section === 'enhancement' && (
           <div>
-            <H>Reformulation IA (v2)</H>
+            <H>Reformulation IA</H>
 
             <Toggle
               checked={config.enhanceEnabled}
@@ -228,7 +228,7 @@ export default function SettingsPage() {
             />
 
             {config.enhanceEnabled ? (
-              <div className="mt-4">
+              <div className="mt-4 space-y-4">
                 <label className="block">
                   <span className="text-sm font-medium text-gray-700">Instruction de reformulation</span>
                   <textarea
@@ -238,10 +238,23 @@ export default function SettingsPage() {
                     rows={4}
                     className="mt-1.5 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
                   />
+                  <p className="mt-1.5 text-xs text-gray-400">
+                    Le texte transcrit sera envoyé à Groq avec cette instruction avant d'être injecté.
+                  </p>
                 </label>
-                <p className="mt-1.5 text-xs text-gray-400">
-                  Le texte transcrit sera envoyé à Groq avec cette instruction avant d'être injecté.
-                </p>
+
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700">Modèle LLM</span>
+                  <input
+                    type="text"
+                    value={config.enhanceModel}
+                    onChange={e => update({ enhanceModel: e.target.value })}
+                    className="mt-1.5 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  />
+                  <span className="mt-1 block text-xs text-gray-400">
+                    Ex : llama-3.3-70b-versatile · llama-3.1-8b-instant
+                  </span>
+                </label>
               </div>
             ) : (
               <p className="mt-3 text-sm text-gray-500">
