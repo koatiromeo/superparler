@@ -27,9 +27,3 @@ pub async fn set_launch_at_startup(
     tracing::info!(enabled, "launch at startup updated");
     Ok(())
 }
-
-#[tauri::command]
-pub async fn open_settings_window(app: AppHandle) -> Result<()> {
-    crate::tray::open_or_create_main(&app);
-    Ok(())
-}
