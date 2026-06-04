@@ -1,9 +1,51 @@
 name: Release
 
+# Triggered by a version tag push: git tag v0.1.0 && git push --tags
 on:
   push:
     tags:
       - 'v*'
+
+# ── Signing & Notarization Secrets ──────────────────────────────────────────
+#
+# macOS — Developer ID signing + notarization (requires paid Apple Developer account)
+#
+#   APPLE_CERTIFICATE          base64-encoded .p12 export of your Developer ID certificate
+#                              Export: Keychain Access → right-click cert → Export .p12
+#                              Encode: base64 -i cert.p12 | pbcopy
+#
+#   APPLE_CERTIFICATE_PASSWORD password set when exporting the .p12
+#
+#   APPLE_SIGNING_IDENTITY     full identity string, e.g.
+#                              "Developer ID Application: Your Name (ABCDEF1234)"
+#                              Run: security find-identity -v -p codesigning
+#
+#   APPLE_ID                   Apple ID email for notarization
+#
+#   APPLE_PASSWORD             App-specific password (NOT your Apple ID password)
+#                              Create at: appleid.apple.com → Sign-In and Security
+#                              → App-Specific Passwords
+#
+#   APPLE_TEAM_ID              10-character Team ID from developer.apple.com
+#
+#   Without these secrets the build is ad-hoc signed (local use only).
+#   Gatekeeper will block unsigned .dmg on other machines.
+#
+# Windows — Authenticode signing (optional, suppresses SmartScreen warning)
+#
+#   WINDOWS_CERTIFICATE        base64-encoded .pfx file
+#                              Linux/macOS: base64 -w 0 cert.pfx
+#                              PowerShell:  [Convert]::ToBase64String([IO.File]::ReadAllBytes("cert.pfx"))
+#
+#   WINDOWS_CERTIFICATE_PASSWORD  password protecting the .pfx
+#
+#   Also set bundle.windows.certificateThumbprint in tauri.conf.json to the
+#   SHA-1 thumbprint of your cert (PowerShell: Get-ChildItem Cert:\CurrentUser\My).
+#   The timestamp URL is pre-configured to http://timestamp.digicert.com.
+#
+#   Without signing, Windows Defender SmartScreen warns on first run until
+#   the executable accumulates reputation.
+# ────────────────────────────────────────────────────────────────────────────
 
 jobs:
   release:
@@ -11,16 +53,26 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # macOS Apple Silicon (M1/M2/M3)
           - platform: macos-latest
             args: '--target aarch64-apple-darwin'
+            name: macOS-arm64
+          # macOS Intel
           - platform: macos-latest
             args: '--target x86_64-apple-darwin'
+            name: macOS-x86_64
+          # Linux — produces .AppImage + .deb
           - platform: ubuntu-22.04
             args: ''
+            name: Linux-x86_64
+          # Windows — produces .msi + NSIS .exe installer
           - platform: windows-latest
             args: ''
+            name: Windows-x86_64
 
     runs-on: ${{ matrix.platform }}
+    name: Build ${{ matrix.name }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -37,14 +89,9 @@ jobs:
             librsvg2-dev \
             cmake clang libclang-dev
 
-      - name: Install macOS targets
+      - name: Install macOS cross-compile targets
         if: matrix.platform == 'macos-latest'
-        run: |
-          rustup target add aarch64-apple-darwin x86_64-apple-darwin
-
-      # macOS code signing — set APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD,
-      # APPLE_SIGNING_IDENTITY, APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID in repo secrets
-      # Windows code signing — set WINDOWS_CERTIFICATE, WINDOWS_CERTIFICATE_PASSWORD
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -53,6 +100,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          key: ${{ matrix.name }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -65,17 +113,20 @@ jobs:
         working-directory: src
         run: npm ci
 
-      - name: Build Tauri app
+      - name: Build and publish Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # macOS signing (optional):
+          # macOS signing — uncomment once secrets are configured in repo Settings → Secrets
           # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           # APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           # APPLE_ID: ${{ secrets.APPLE_ID }}
           # APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Windows signing — uncomment once secrets are configured
+          # WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          # WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'SuperParler ${{ github.ref_name }}'
@@ -83,12 +134,24 @@ jobs:
             ## SuperParler ${{ github.ref_name }}
 
             Téléchargez le fichier correspondant à votre OS :
-            - **macOS (Apple Silicon)** : `.dmg` aarch64
-            - **macOS (Intel)** : `.dmg` x86_64
-            - **Windows** : `.msi`
-            - **Linux** : `.AppImage` ou `.deb`
 
-            Voir README.md pour les prérequis.
+            | Plateforme | Fichier |
+            |---|---|
+            | macOS Apple Silicon (M1/M2/M3) | `SuperParler_*_aarch64.dmg` |
+            | macOS Intel | `SuperParler_*_x64.dmg` |
+            | Windows | `SuperParler_*_x64-setup.exe` ou `.msi` |
+            | Linux | `super-parler_*_amd64.AppImage` ou `.deb` |
+
+            ### macOS — Première ouverture
+            Si Gatekeeper bloque l'app : clic droit → Ouvrir → Ouvrir quand même.
+            Accordez ensuite les permissions dans Réglages → Confidentialité :
+            - **Micro** (requis pour la capture audio)
+            - **Accessibilité** (requis pour l'injection de texte)
+
+            ### Windows — SmartScreen
+            Si SmartScreen bloque : Informations complémentaires → Exécuter quand même.
+
+            Voir README.md pour les prérequis système et la configuration.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

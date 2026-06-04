@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Microphone access — required for cpal audio capture -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+
+    <!-- Outbound network — required for Groq API (STT cloud + LLM enhance) -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+
+    <!--
+        Accessibility (text injection) — enigo uses CGEvent to simulate keystrokes.
+        This entitlement alone is not sufficient; the user must ALSO grant Accessibility
+        permission at runtime: System Settings → Privacy & Security → Accessibility.
+    -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
+
+    <!--
+        Hardened Runtime — required for notarization.
+        Allow unsigned executable memory for WebKit JIT (WKWebView / Tauri).
+    -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+</dict>
+</plist>

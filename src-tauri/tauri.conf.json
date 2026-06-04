@@ -68,7 +68,6 @@
     "longDescription": "SuperParler transforme votre voix en texte injecté directement à l'emplacement du curseur, depuis n'importe quelle application.",
     "macOS": {
       "entitlements": "entitlements.plist",
-      "exceptionDomain": "",
       "frameworks": [],
       "minimumSystemVersion": "12.0",
       "signingIdentity": null,
@@ -77,7 +76,7 @@
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
-      "timestampUrl": "",
+      "timestampUrl": "http://timestamp.digicert.com",
       "webviewInstallMode": {
         "type": "downloadBootstrapper"
       }
