@@ -44,6 +44,7 @@ pub async fn start_recording(state: &AppState, app: &AppHandle) -> Result<()> {
         return Err(AppError::Emit(e.to_string()));
     }
     tray::update_tray_state(app, &RecordingState::Recording);
+    crate::overlay::show(app, "recording");
 
     let state_clone = state.clone();
     let app_clone = app.clone();
@@ -131,6 +132,7 @@ pub async fn stop_recording(state: &AppState, app: &AppHandle) -> Result<()> {
     app.emit(events::EVT_RECORDING_TRANSCRIBING, ())
         .map_err(|e| AppError::Emit(e.to_string()))?;
     tray::update_tray_state(app, &RecordingState::Transcribing);
+    crate::overlay::show(app, "transcribing");
 
     Ok(())
 }
@@ -237,5 +239,7 @@ async fn reset_state(state: &AppState, app: &AppHandle) {
     let mut guard = state.lock().await;
     guard.recording_state = RecordingState::Idle;
     guard.audio_samples = None;
+    drop(guard);
     tray::update_tray_state(app, &RecordingState::Idle);
+    crate::overlay::hide(app);
 }

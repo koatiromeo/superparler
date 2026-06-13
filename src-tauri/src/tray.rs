@@ -5,6 +5,8 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
 
+use tauri_plugin_autostart::ManagerExt;
+
 use crate::{
     config::{AppConfig, Engine, RecordingMode},
     state::{AppState, RecordingState},
@@ -53,6 +55,14 @@ fn engine_label(engine: &Engine) -> &'static str {
     }
 }
 
+fn autostart_label(enabled: bool) -> &'static str {
+    if enabled {
+        "Démarrage auto : activé ✓"
+    } else {
+        "Démarrage auto : désactivé"
+    }
+}
+
 // ── Managed state ─────────────────────────────────────────────────────────────
 
 pub struct TrayItems {
@@ -60,6 +70,7 @@ pub struct TrayItems {
     pub lang_item: MenuItem<tauri::Wry>,
     pub mode_item: MenuItem<tauri::Wry>,
     pub engine_item: MenuItem<tauri::Wry>,
+    pub autostart_item: MenuItem<tauri::Wry>,
     pub idle_icon: Image<'static>,
 }
 
@@ -91,6 +102,13 @@ pub fn setup_tray(app: &mut App, config: &AppConfig) -> tauri::Result<()> {
         true,
         None::<&str>,
     )?;
+    let autostart_item = MenuItem::with_id(
+        app,
+        "toggle_autostart",
+        autostart_label(config.launch_at_startup),
+        true,
+        None::<&str>,
+    )?;
 
     let paste_key = MenuItem::with_id(
         app,
@@ -113,6 +131,7 @@ pub fn setup_tray(app: &mut App, config: &AppConfig) -> tauri::Result<()> {
             &lang_item,
             &mode_item,
             &engine_item,
+            &autostart_item,
             &sep2,
             &paste_key,
             &sep3,
@@ -130,6 +149,7 @@ pub fn setup_tray(app: &mut App, config: &AppConfig) -> tauri::Result<()> {
         lang_item: lang_item.clone(),
         mode_item: mode_item.clone(),
         engine_item: engine_item.clone(),
+        autostart_item: autostart_item.clone(),
         idle_icon: idle_icon.clone(),
     });
 
@@ -328,6 +348,51 @@ fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
                                  puis clic droit → « Coller clé Groq ».",
                             );
                         }
+                    }
+                }
+            });
+        }
+
+        "toggle_autostart" => {
+            let app = app.clone();
+            tauri::async_runtime::spawn(async move {
+                let state = app.state::<AppState>();
+                let mut guard = state.lock().await;
+                let new_enabled = !guard.config.launch_at_startup;
+
+                // OS-level autostart entry (Windows Run key / LaunchAgent / .desktop).
+                let autostart = app.autolaunch();
+                let res = if new_enabled {
+                    autostart.enable()
+                } else {
+                    autostart.disable()
+                };
+
+                match res {
+                    Ok(()) => {
+                        guard.config.launch_at_startup = new_enabled;
+                        if let Err(e) = guard.config.save(app.app_handle()) {
+                            tracing::error!("save config (autostart): {e}");
+                        }
+                        drop(guard);
+                        if let Some(items) = app.try_state::<TrayItems>() {
+                            let _ = items.autostart_item.set_text(autostart_label(new_enabled));
+                        }
+                        tracing::info!(enabled = new_enabled, "autostart toggled via tray");
+                        notify(
+                            &app,
+                            "SuperParler",
+                            if new_enabled {
+                                "Démarrage automatique activé — SuperParler se lancera avec Windows."
+                            } else {
+                                "Démarrage automatique désactivé."
+                            },
+                        );
+                    }
+                    Err(e) => {
+                        drop(guard);
+                        tracing::error!("autostart toggle failed: {e}");
+                        show_tray_error(&app, "Échec du réglage du démarrage auto");
                     }
                 }
             });

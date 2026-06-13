@@ -11,6 +11,7 @@ pub mod events;
 pub mod hotkey;
 pub mod inject;
 pub mod models;
+pub mod overlay;
 pub mod pipeline;
 pub mod startup;
 pub mod state;

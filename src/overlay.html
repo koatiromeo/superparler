@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SuperParler</title>
+    <style>
+      :root {
+        --rec: #ff5b5b;
+        --busy: #ffb33d;
+        --bar: #ececf2;
+        --muted: #8b8b95;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+        cursor: default;
+        font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* ── Panel ───────────────────────────────────────────── */
+      .panel {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(180deg, #2a2a30 0%, #161619 100%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        box-shadow: 0 10px 34px rgba(0, 0, 0, 0.55),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(10px) scale(0.97);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+      .panel.show {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+
+      /* ── Waveform ────────────────────────────────────────── */
+      .wave {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        padding: 8px 16px 6px;
+      }
+      .wave span {
+        width: 2.5px;
+        height: 3px;
+        border-radius: 2px;
+        background: var(--bar);
+        opacity: 0.92;
+        animation: wave 1.1s ease-in-out infinite;
+        animation-delay: var(--d);
+        will-change: height;
+      }
+      @keyframes wave {
+        0%,
+        100% {
+          height: 3px;
+        }
+        50% {
+          height: var(--max);
+        }
+      }
+      .panel.transcribing .wave span {
+        background: var(--busy);
+        animation-duration: 1.7s;
+      }
+
+      /* ── Footer ──────────────────────────────────────────── */
+      .footer {
+        height: 27px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(0, 0, 0, 0.18);
+      }
+      .left {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 500;
+      }
+      .mic {
+        width: 12px;
+        height: 12px;
+        fill: var(--rec);
+        flex: 0 0 auto;
+      }
+      .panel.transcribing .mic {
+        fill: var(--busy);
+      }
+      .kbd {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .kbd b {
+        font-weight: 600;
+        color: #c9c9d2;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 5px;
+        padding: 1px 6px;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="panel" class="panel recording">
+      <div class="wave" id="wave"></div>
+      <div class="footer">
+        <div class="left">
+          <svg class="mic" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z" />
+            <path d="M17 11a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z" />
+          </svg>
+          <span id="label">Enregistrement…</span>
+        </div>
+        <div class="kbd"><b>Ctrl</b><b>⇧</b><b>Espace</b></div>
+      </div>
+    </div>
+    <script type="module" src="/src/overlay/main.ts"></script>
+  </body>
+</html>
