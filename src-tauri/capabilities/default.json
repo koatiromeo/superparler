@@ -18,6 +18,8 @@
     "autostart:allow-enable",
     "autostart:allow-disable",
     "autostart:allow-is-enabled",
+    "notification:default",
+    "notification:allow-show",
     "core:window:allow-set-ignore-cursor-events",
     "core:window:allow-set-position"
   ]

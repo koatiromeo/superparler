@@ -28,6 +28,7 @@ tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-autostart = "2"
+tauri-plugin-notification = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
@@ -36,7 +37,16 @@ rubato = "0.15"
 hound = "3"
 voice_activity_detector = { version = "0.2", optional = true }
 enigo = "0.2"
-reqwest = { version = "0.12", features = ["json", "multipart", "rustls-tls"], default-features = false }
+reqwest = { version = "0.12", features = ["json", "multipart", "stream", "rustls-tls"], default-features = false }
+# Offline STT — Parakeet via ONNX Runtime. The `onnx` feature pulls `ort`
+# (pre-built ONNX Runtime binaries, no C++/LLVM toolchain). `whisper-cpp` is
+# deliberately OFF so we keep the no-LLVM build the project switched to.
+transcribe-rs = { version = "0.3.11", default-features = false, features = ["onnx"] }
+# Model download + extraction (Parakeet ships as a sha256-verified .tar.gz).
+tar = "0.4"
+flate2 = "1"
+sha2 = "0.10"
+futures-util = "0.3"
 sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "uuid", "chrono"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
@@ -44,16 +54,33 @@ thiserror = "2"
 anyhow = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# keyring v3 has NO credential backend unless a per-platform feature is enabled.
+# Without it, set_password() silently no-ops (mock store) and the key never
+# persists. Backends are activated per-target below.
 keyring = "3"
 directories = "6"
 toml = "0.8"
 async-trait = "0.1"
 arboard = "3"
 
+# ── keyring OS backends, per platform ───────────────────────────────────────
+# Activated per-target so we never pull the wrong backend's deps.
+# NOTE: macOS (apple-native) and Linux (sync-secret-service) backends are
+# intentionally deferred — add them when building for those targets:
+#   [target.'cfg(target_os = "macos")'.dependencies]
+#   keyring = { version = "3", features = ["apple-native"] }
+#   [target.'cfg(target_os = "linux")'.dependencies]
+#   keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+
 [features]
-# vad: Silero VAD via ort — compiles WITHOUT LLVM (ort uses pre-generated bindings + downloads ONNX Runtime)
-# local-stt: whisper-rs local STT — requires LLVM/libclang for bindgen
-default = ["vad"]
+# `vad` (Silero VAD via `voice_activity_detector`) is OFF by default: that crate
+# pins an OLD `ort` API that is incompatible with the `ort` rc.12 required by
+# `transcribe-rs` (offline Parakeet). Enabling both at once fails to compile.
+# Default build uses the dependency-free energy-based VAD in `audio/vad.rs`,
+# which is plenty for trimming leading/trailing silence in dictation.
+default = []
 vad = ["dep:voice_activity_detector"]
 
 [build-dependencies]

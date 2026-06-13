@@ -6,7 +6,7 @@ use tauri::{
 };
 
 use crate::{
-    config::{AppConfig, RecordingMode},
+    config::{AppConfig, Engine, RecordingMode},
     state::{AppState, RecordingState},
 };
 
@@ -46,12 +46,20 @@ fn mode_label(mode: &RecordingMode) -> &'static str {
     }
 }
 
+fn engine_label(engine: &Engine) -> &'static str {
+    match engine {
+        Engine::Local => "Moteur : Local (Parakeet, hors-ligne)",
+        Engine::Groq => "Moteur : Groq (cloud)",
+    }
+}
+
 // ── Managed state ─────────────────────────────────────────────────────────────
 
 pub struct TrayItems {
     pub toggle: MenuItem<tauri::Wry>,
     pub lang_item: MenuItem<tauri::Wry>,
     pub mode_item: MenuItem<tauri::Wry>,
+    pub engine_item: MenuItem<tauri::Wry>,
     pub idle_icon: Image<'static>,
 }
 
@@ -76,6 +84,13 @@ pub fn setup_tray(app: &mut App, config: &AppConfig) -> tauri::Result<()> {
         true,
         None::<&str>,
     )?;
+    let engine_item = MenuItem::with_id(
+        app,
+        "cycle_engine",
+        engine_label(&config.engine),
+        true,
+        None::<&str>,
+    )?;
 
     let paste_key = MenuItem::with_id(
         app,
@@ -97,6 +112,7 @@ pub fn setup_tray(app: &mut App, config: &AppConfig) -> tauri::Result<()> {
             &sep1,
             &lang_item,
             &mode_item,
+            &engine_item,
             &sep2,
             &paste_key,
             &sep3,
@@ -113,6 +129,7 @@ pub fn setup_tray(app: &mut App, config: &AppConfig) -> tauri::Result<()> {
         toggle: toggle.clone(),
         lang_item: lang_item.clone(),
         mode_item: mode_item.clone(),
+        engine_item: engine_item.clone(),
         idle_icon: idle_icon.clone(),
     });
 
@@ -156,6 +173,13 @@ pub fn setup_tray(app: &mut App, config: &AppConfig) -> tauri::Result<()> {
 }
 
 // ── Menu events ───────────────────────────────────────────────────────────────
+
+/// Show an OS notification — the reliable way to give feedback in a tray-only app
+/// (a tray tooltip is easy to miss).
+fn notify(app: &AppHandle, title: &str, body: &str) {
+    use tauri_plugin_notification::NotificationExt;
+    let _ = app.notification().builder().title(title).body(body).show();
+}
 
 fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
     match event.id.as_ref() {
@@ -224,47 +248,172 @@ fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
             });
         }
 
+        "cycle_engine" => {
+            let app = app.clone();
+            tauri::async_runtime::spawn(async move {
+                let (new_engine, label) = {
+                    let state = app.state::<AppState>();
+                    let mut guard = state.lock().await;
+                    guard.config.engine = match guard.config.engine {
+                        Engine::Local => Engine::Groq,
+                        Engine::Groq => Engine::Local,
+                    };
+                    let label = engine_label(&guard.config.engine);
+                    if let Err(e) = guard.config.save(app.app_handle()) {
+                        tracing::error!("save config (engine): {e}");
+                    }
+                    (guard.config.engine.clone(), label)
+                };
+                if let Some(items) = app.try_state::<TrayItems>() {
+                    let _ = items.engine_item.set_text(label);
+                }
+                tracing::info!(engine = new_engine.as_str(), "engine switched via tray");
+
+                // Make the newly-selected engine ready.
+                match new_engine {
+                    Engine::Local => {
+                        if crate::models::is_parakeet_v3_installed() {
+                            if let Ok(dir) = crate::models::parakeet_v3_dir() {
+                                crate::stt::local::LocalParakeet::prewarm(dir);
+                            }
+                            crate::stt::local::LocalParakeet::spawn_idle_watcher();
+                            notify(
+                                &app,
+                                "SuperParler — Moteur : Local ✓",
+                                "Parakeet (hors-ligne) prêt. Clique dans un champ de texte puis dicte.",
+                            );
+                        } else {
+                            notify(
+                                &app,
+                                "SuperParler — Téléchargement du modèle",
+                                "Téléchargement du modèle Parakeet (~456 Mo). La dictée locale \
+                                 sera prête à la fin.",
+                            );
+                            let app2 = app.clone();
+                            tauri::async_runtime::spawn(async move {
+                                if let Err(e) = crate::models::ensure_parakeet_v3(&app2).await {
+                                    tracing::error!(
+                                        "Parakeet download (engine switch) failed: {e}"
+                                    );
+                                    show_tray_error(&app2, "Échec du téléchargement du modèle");
+                                } else {
+                                    crate::stt::local::LocalParakeet::spawn_idle_watcher();
+                                    notify(
+                                        &app2,
+                                        "SuperParler — Moteur : Local ✓",
+                                        "Modèle installé. Clique dans un champ de texte puis dicte.",
+                                    );
+                                }
+                            });
+                        }
+                    }
+                    Engine::Groq => {
+                        // Free the local model's RAM; warn now if no key is set.
+                        crate::stt::local::LocalParakeet::unload();
+                        if crate::stt::groq::GroqWhisper::has_api_key() {
+                            notify(
+                                &app,
+                                "SuperParler — Moteur : Groq (cloud) ✓",
+                                "Clé détectée. Clique dans un champ de texte puis dicte.",
+                            );
+                        } else {
+                            show_tray_error(
+                                &app,
+                                "Clé Groq manquante — clic droit → « Coller clé Groq »",
+                            );
+                            notify(
+                                &app,
+                                "SuperParler — Clé Groq requise",
+                                "Moteur basculé sur Groq, mais aucune clé. Copie ta clé (gsk_…) \
+                                 puis clic droit → « Coller clé Groq ».",
+                            );
+                        }
+                    }
+                }
+            });
+        }
+
         "paste_groq_key" => {
             let app = app.clone();
             tauri::async_runtime::spawn(async move {
                 // arboard is not Send — run on blocking thread
                 let result = tokio::task::spawn_blocking(|| {
-                    arboard::Clipboard::new()
-                        .and_then(|mut c| c.get_text())
+                    arboard::Clipboard::new().and_then(|mut c| c.get_text())
                 })
                 .await;
 
                 let key = match result {
                     Ok(Ok(text)) if !text.trim().is_empty() => text.trim().to_string(),
                     Ok(Ok(_)) => {
-                        show_tray_error(&app, "Presse-papiers vide — copiez votre clé Groq d'abord");
+                        notify(
+                            &app,
+                            "SuperParler — Presse-papiers vide",
+                            "Copie d'abord ta clé Groq (gsk_…), puis réessaie.",
+                        );
+                        show_tray_error(&app, "Presse-papiers vide — copie ta clé Groq d'abord");
                         return;
                     }
                     _ => {
-                        show_tray_error(&app, "Impossible de lire le presse-papiers");
+                        notify(
+                            &app,
+                            "SuperParler — Erreur",
+                            "Impossible de lire le presse-papiers.",
+                        );
                         return;
                     }
                 };
 
                 // Basic sanity check — Groq keys start with "gsk_"
                 if !key.starts_with("gsk_") {
+                    notify(
+                        &app,
+                        "SuperParler — Clé invalide",
+                        "Ce n'est pas une clé Groq : elle doit commencer par « gsk_ ».",
+                    );
                     show_tray_error(&app, "Ce n'est pas une clé Groq (doit commencer par gsk_)");
                     return;
                 }
 
                 match keyring::Entry::new("superparler", "groq")
-                    .and_then(|e| { e.set_password(&key).map(|_| ()) })
+                    .and_then(|e| e.set_password(&key).map(|_| ()))
                 {
                     Ok(()) => {
-                        tracing::info!("Groq API key saved from clipboard");
-                        if let Some(tray) = app.tray_by_id("main-tray") {
-                            let _ = tray.set_tooltip(Some("SuperParler — Clé Groq sauvegardée ✓"));
+                        // Verify it actually persisted: a keyring with no OS backend
+                        // returns Ok from set_password but stores nothing. Read it back
+                        // so we never tell the user "saved" when it wasn't.
+                        if crate::stt::groq::GroqWhisper::has_api_key() {
+                            tracing::info!("Groq API key saved and verified in keyring");
+                            notify(
+                                &app,
+                                "SuperParler — Clé Groq enregistrée ✓",
+                                "Clé validée et persistée. Bascule le moteur sur « Groq » \
+                                 (clic droit → Moteur), puis dicte.",
+                            );
+                            if let Some(tray) = app.tray_by_id("main-tray") {
+                                let _ =
+                                    tray.set_tooltip(Some("SuperParler — Clé Groq enregistrée ✓"));
+                            }
+                            update_tray_state(&app, &RecordingState::Idle);
+                        } else {
+                            tracing::error!(
+                                "keyring set_password returned Ok but read-back failed — no OS backend?"
+                            );
+                            notify(
+                                &app,
+                                "SuperParler — Échec d'enregistrement",
+                                "La clé n'a pas pu être persistée dans le trousseau Windows. \
+                                 Reconstruis l'app (backend keyring) puis réessaie.",
+                            );
+                            show_tray_error(&app, "Clé non persistée (backend keyring)");
                         }
-                        tokio::time::sleep(std::time::Duration::from_secs(3)).await;
-                        update_tray_state(&app, &RecordingState::Idle);
                     }
                     Err(e) => {
                         tracing::error!("keyring write failed: {e}");
+                        notify(
+                            &app,
+                            "SuperParler — Erreur",
+                            &format!("Impossible de sauvegarder la clé : {e}"),
+                        );
                         show_tray_error(&app, "Impossible de sauvegarder la clé");
                     }
                 }
@@ -351,6 +500,11 @@ fn circle_icon(r: u8, g: u8, b: u8, size: u32) -> Image<'static> {
 }
 
 // ── Hotkey formatting ─────────────────────────────────────────────────────────
+
+/// Format `hotkey` for display on the current platform (e.g. "Ctrl+Shift+Espace").
+pub(crate) fn display_hotkey(hotkey: &str) -> String {
+    format_hotkey(cfg!(target_os = "macos"), hotkey)
+}
 
 fn format_hotkey(macos: bool, hotkey: &str) -> String {
     if macos {

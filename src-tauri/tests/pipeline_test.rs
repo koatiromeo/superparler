@@ -3,22 +3,31 @@
 
 use superparler_lib::{
     config::{AppConfig, Engine},
+    error::AppError,
+    models,
     stt::factory::build_transcriber,
 };
 
-/// Test that factory returns Err for local engine when model is missing
+/// Local engine with no downloaded model must return a clean `ModelNotFound`
+/// (never panic). If the model happens to be installed on this machine, the
+/// factory may legitimately succeed — assert against the actual install state.
 #[tokio::test]
 async fn test_factory_local_missing_model() {
     let config = AppConfig {
         engine: Engine::Local,
-        local_model_path: "/definitely/does/not/exist/model.gguf".to_string(),
         ..AppConfig::default()
     };
-    let result = build_transcriber(&config);
-    assert!(
-        result.is_err(),
-        "Expected error for missing local model, got Ok"
-    );
+    let installed = models::is_parakeet_v3_installed();
+    match build_transcriber(&config) {
+        Ok(_) => assert!(
+            installed,
+            "factory returned Ok but the model is not installed"
+        ),
+        Err(e) => assert!(
+            matches!(e, AppError::ModelNotFound(_)),
+            "expected ModelNotFound for a missing local model, got: {e}"
+        ),
+    }
 }
 
 /// Test that factory builds Groq transcriber without error (key checked at transcribe time)

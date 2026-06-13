@@ -23,12 +23,18 @@ pub struct AppConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum Engine {
+    /// Offline NVIDIA Parakeet via ONNX Runtime. No API key, no network. Default.
+    Local,
+    /// Groq cloud Whisper. Fast and light, but requires an API key + network.
     Groq,
 }
 
 impl Engine {
     pub fn as_str(&self) -> &'static str {
-        "groq"
+        match self {
+            Engine::Local => "local",
+            Engine::Groq => "groq",
+        }
     }
 }
 
@@ -49,11 +55,11 @@ pub enum InjectMethod {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            engine: Engine::Groq,
+            engine: Engine::Local,
             groq_model: "whisper-large-v3-turbo".to_string(),
             language: "fr".to_string(),
             hotkey: "CmdOrCtrl+Shift+Space".to_string(),
-            mode: RecordingMode::PushToTalk,
+            mode: RecordingMode::Toggle,
             inject_method: InjectMethod::Paste,
             enhance_enabled: false,
             enhance_prompt: String::new(),

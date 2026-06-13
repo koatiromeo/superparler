@@ -46,6 +46,12 @@ impl GroqWhisper {
         })
     }
 
+    /// Whether a Groq API key is available (keyring or GROQ_API_KEY env).
+    /// Lets startup warn the user *before* their first dictation fails silently.
+    pub fn has_api_key() -> bool {
+        Self::get_api_key().is_ok()
+    }
+
     /// Encode 16 kHz mono f32 samples to in-memory WAV bytes (hound).
     fn encode_wav(samples: &[f32]) -> Result<Vec<u8>> {
         let spec = hound::WavSpec {

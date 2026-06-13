@@ -60,6 +60,7 @@
   "plugins": {
     "global-shortcut": null,
     "clipboard-manager": null,
-    "autostart": null
+    "autostart": null,
+    "notification": null
   }
 }

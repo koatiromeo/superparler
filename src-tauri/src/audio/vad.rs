@@ -1,4 +1,6 @@
-use crate::error::{AppError, Result};
+#[cfg(feature = "vad")]
+use crate::error::AppError;
+use crate::error::Result;
 
 /// Chunk size for VAD processing at 16 kHz (32 ms frames — Silero requirement).
 const CHUNK_SIZE: usize = 512;

@@ -1,11 +1,7 @@
 use serde::Serialize;
 use tauri::State;
 
-use crate::{
-    error::Result,
-    state::AppState,
-    stt::factory,
-};
+use crate::{error::Result, state::AppState, stt::factory};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -37,10 +33,12 @@ pub async fn test_engine(state: State<'_, AppState>) -> Result<EngineStatus> {
 #[tauri::command]
 pub async fn set_groq_key(key: String, _state: State<'_, AppState>) -> Result<()> {
     if key.trim().is_empty() {
-        return Err(crate::error::AppError::Keyring("API key must not be empty".to_string()));
+        return Err(crate::error::AppError::Keyring(
+            "API key must not be empty".to_string(),
+        ));
     }
-    let entry =
-        keyring::Entry::new("superparler", "groq").map_err(|e| crate::error::AppError::Keyring(e.to_string()))?;
+    let entry = keyring::Entry::new("superparler", "groq")
+        .map_err(|e| crate::error::AppError::Keyring(e.to_string()))?;
     entry
         .set_password(key.trim())
         .map_err(|e| crate::error::AppError::Keyring(format!("keyring write: {e}")))?;

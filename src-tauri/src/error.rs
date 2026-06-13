@@ -28,6 +28,8 @@ pub enum AppError {
     Keyring(String),
     #[error("network error: {0}")]
     Network(String),
+    #[error("download error: {0}")]
+    Download(String),
     #[error("not recording")]
     NotRecording,
     #[error("already recording")]

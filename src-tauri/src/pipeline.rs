@@ -1,6 +1,7 @@
 /// pipeline.rs — single orchestration point for dictation.
 /// Flow: capture → resample → VAD → STT → enhance? → inject → persist → emit
 use tauri::{AppHandle, Emitter};
+use tauri_plugin_notification::NotificationExt;
 
 use crate::{
     audio::capture::AudioRecorder,
@@ -11,6 +12,10 @@ use crate::{
     state::{AppState, RecordingState},
     storage, tray,
 };
+
+fn notify(app: &AppHandle, title: &str, body: &str) {
+    let _ = app.notification().builder().title(title).body(body).show();
+}
 
 /// Begin audio capture. Emits "recording:started".
 pub async fn start_recording(state: &AppState, app: &AppHandle) -> Result<()> {
@@ -92,6 +97,12 @@ pub async fn start_recording(state: &AppState, app: &AppHandle) -> Result<()> {
         if let Err(e) = run_transcription(&state_clone, &app_clone).await {
             tracing::error!("transcription pipeline failed: {e}");
             tray::show_tray_error(&app_clone, &e.to_string());
+            let notif_body = if matches!(e, AppError::Keyring(_)) {
+                "Clé API Groq manquante — clic droit sur l'icône → Coller la clé Groq".to_string()
+            } else {
+                e.to_string()
+            };
+            notify(&app_clone, "SuperParler — Erreur", &notif_body);
             let _ = app_clone.emit(
                 events::EVT_RECORDING_ERROR,
                 RecordingErrorPayload {
@@ -135,6 +146,7 @@ async fn run_transcription(state: &AppState, app: &AppHandle) -> Result<()> {
     // Fix: always emit result so the frontend exits Transcribing state.
     if samples.is_empty() {
         tracing::warn!("pipeline: VAD found no speech — skipping STT");
+        notify(app, "SuperParler", "Aucune parole détectée");
         let _ = app.emit(
             events::EVT_RECORDING_RESULT,
             RecordingResultPayload {
@@ -151,6 +163,7 @@ async fn run_transcription(state: &AppState, app: &AppHandle) -> Result<()> {
 
     if text.trim().is_empty() {
         tracing::warn!("STT returned empty text — skipping inject/persist");
+        notify(app, "SuperParler", "Aucune parole détectée");
         let _ = app.emit(
             events::EVT_RECORDING_RESULT,
             RecordingResultPayload {
@@ -201,6 +214,14 @@ async fn run_transcription(state: &AppState, app: &AppHandle) -> Result<()> {
     } else {
         tracing::warn!("DB pool not available — transcription not persisted");
     }
+
+    let preview: String = final_text.chars().take(120).collect();
+    let notif_body = if final_text.len() > 120 {
+        format!("{}…", preview)
+    } else {
+        preview
+    };
+    notify(app, "SuperParler ✓", &notif_body);
 
     app.emit(
         events::EVT_RECORDING_RESULT,
