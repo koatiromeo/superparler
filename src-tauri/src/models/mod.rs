@@ -44,8 +44,12 @@ pub fn is_parakeet_v3_installed() -> bool {
 }
 
 /// Ensure the Parakeet V3 model is present, downloading + extracting if needed.
-/// Idempotent; safe to call on every startup.
-pub async fn ensure_parakeet_v3(app: &AppHandle) -> Result<PathBuf> {
+/// Idempotent; safe to call on every startup. Reports progress through a plain
+/// callback (no `AppHandle`) so it works from the standalone admin process too.
+pub async fn ensure_parakeet_v3_cb<F>(progress: F) -> Result<PathBuf>
+where
+    F: Fn(u64, u64) + Send + Sync + 'static,
+{
     let dir = parakeet_v3_dir()?;
     if is_parakeet_v3_installed() {
         return Ok(dir);
@@ -57,10 +61,7 @@ pub async fn ensure_parakeet_v3(app: &AppHandle) -> Result<PathBuf> {
     let archive = models.join("parakeet-v3-int8.tar.gz.part");
 
     tracing::info!(url = PARAKEET_V3_URL, "downloading Parakeet V3 model");
-    if let Err(e) = download_with_progress(app, PARAKEET_V3_URL, &archive, PARAKEET_V3_ID).await {
-        let _ = app.emit(events::EVT_MODEL_DOWNLOAD_ERROR, e.to_string());
-        return Err(e);
-    }
+    download_with_progress(PARAKEET_V3_URL, &archive, &progress).await?;
 
     tracing::info!("verifying Parakeet V3 checksum");
     verify_sha256(&archive, PARAKEET_V3_SHA256)?;
@@ -72,17 +73,46 @@ pub async fn ensure_parakeet_v3(app: &AppHandle) -> Result<PathBuf> {
     fs::write(dir.join(".complete"), b"ok")?;
     let _ = fs::remove_file(&archive);
 
-    let _ = app.emit(events::EVT_MODEL_DOWNLOAD_DONE, PARAKEET_V3_ID);
     tracing::info!("Parakeet V3 ready at {}", dir.display());
     Ok(dir)
 }
 
-async fn download_with_progress(
-    app: &AppHandle,
-    url: &str,
-    dest: &Path,
-    model_id: &str,
-) -> Result<()> {
+/// `AppHandle`-driven wrapper that re-emits the callback progress as Tauri
+/// events (used by the tray app's startup + commands).
+pub async fn ensure_parakeet_v3(app: &AppHandle) -> Result<PathBuf> {
+    let app_progress = app.clone();
+    let res = ensure_parakeet_v3_cb(move |downloaded, total| {
+        let percentage = if total > 0 {
+            downloaded as f64 / total as f64 * 100.0
+        } else {
+            0.0
+        };
+        let _ = app_progress.emit(
+            events::EVT_MODEL_DOWNLOAD_PROGRESS,
+            ModelDownloadProgressPayload {
+                model_id: PARAKEET_V3_ID.to_string(),
+                downloaded,
+                total,
+                percentage,
+            },
+        );
+    })
+    .await;
+    match &res {
+        Ok(_) => {
+            let _ = app.emit(events::EVT_MODEL_DOWNLOAD_DONE, PARAKEET_V3_ID);
+        }
+        Err(e) => {
+            let _ = app.emit(events::EVT_MODEL_DOWNLOAD_ERROR, e.to_string());
+        }
+    }
+    res
+}
+
+async fn download_with_progress<F>(url: &str, dest: &Path, progress: &F) -> Result<()>
+where
+    F: Fn(u64, u64),
+{
     let client = reqwest::Client::builder()
         .build()
         .map_err(|e| AppError::Network(e.to_string()))?;
@@ -108,23 +138,10 @@ async fn download_with_progress(
         let chunk = chunk.map_err(|e| AppError::Download(e.to_string()))?;
         file.write_all(&chunk)?;
         downloaded += chunk.len() as u64;
-        // Throttle progress events to ~every 4 MB to avoid flooding the frontend.
+        // Throttle progress to ~every 4 MB to avoid flooding the listener.
         if downloaded - last_emit >= 4_000_000 || (total > 0 && downloaded >= total) {
             last_emit = downloaded;
-            let percentage = if total > 0 {
-                downloaded as f64 / total as f64 * 100.0
-            } else {
-                0.0
-            };
-            let _ = app.emit(
-                events::EVT_MODEL_DOWNLOAD_PROGRESS,
-                ModelDownloadProgressPayload {
-                    model_id: model_id.to_string(),
-                    downloaded,
-                    total,
-                    percentage,
-                },
-            );
+            progress(downloaded, total);
         }
     }
     file.flush()?;

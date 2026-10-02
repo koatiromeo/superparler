@@ -21,6 +21,8 @@ impl AudioRecorder {
     /// Spawn a dedicated OS thread that opens and runs the cpal stream.
     /// Blocks until the thread confirms the stream is playing (or returns an error).
     pub fn start() -> Result<Self> {
+        // Reset the live-spectrum ring so the waveform starts from silence.
+        crate::spectrum::clear();
         let (stop_tx, stop_rx) = std::sync::mpsc::sync_channel::<()>(1);
         let (samples_tx, samples_rx) = std::sync::mpsc::channel::<Result<Vec<f32>>>();
         // Oneshot: thread signals "stream ready" (Ok) or "init failed" (Err).
@@ -143,13 +145,17 @@ fn build_stream(
 ) -> Result<Stream> {
     let fmt = config.sample_format();
     let cfg: StreamConfig = config.into();
+    let channels = cfg.channels;
     let err_fn = |e| tracing::error!("cpal stream error: {e}");
 
     match fmt {
         SampleFormat::F32 => device
             .build_input_stream(
                 &cfg,
-                move |data: &[f32], _| push_f32(&buffer, data),
+                move |data: &[f32], _| {
+                    push_f32(&buffer, data);
+                    crate::spectrum::push_samples(data, channels);
+                },
                 err_fn,
                 None,
             )
@@ -161,6 +167,7 @@ fn build_stream(
                 move |data: &[i16], _| {
                     let f: Vec<f32> = data.iter().map(|&s| s as f32 / i16::MAX as f32).collect();
                     push_f32(&buffer, &f);
+                    crate::spectrum::push_samples(&f, channels);
                 },
                 err_fn,
                 None,
@@ -176,6 +183,7 @@ fn build_stream(
                         .map(|&s| (s as f32 / u16::MAX as f32) * 2.0 - 1.0)
                         .collect();
                     push_f32(&buffer, &f);
+                    crate::spectrum::push_samples(&f, channels);
                 },
                 err_fn,
                 None,

@@ -2,6 +2,8 @@ use tauri::Manager;
 use tauri_plugin_autostart::ManagerExt;
 use tracing_subscriber::EnvFilter;
 
+#[cfg(windows)]
+pub mod admin;
 pub mod audio;
 pub mod commands;
 pub mod config;
@@ -13,6 +15,7 @@ pub mod inject;
 pub mod models;
 pub mod overlay;
 pub mod pipeline;
+pub mod spectrum;
 pub mod startup;
 pub mod state;
 pub mod storage;
@@ -35,6 +38,15 @@ pub fn run() {
             ),
         )
         .init();
+
+    // Standalone admin window mode — a separate process the tray launches as
+    // `SuperParler.exe --admin`. It owns its own (egui) event loop and must NOT
+    // trip the single-instance guard below, so it is handled first and returns.
+    #[cfg(windows)]
+    if std::env::args().any(|a| a == "--admin") {
+        admin::run_admin();
+        return;
+    }
 
     // Single-instance guard: the bound TcpListener stays open for the lifetime
     // of run(). A second instance hits AddrInUse and exits cleanly. Any OTHER

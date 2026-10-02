@@ -139,6 +139,12 @@ pub async fn stop_recording(state: &AppState, app: &AppHandle) -> Result<()> {
 
 /// VAD → STT → enhance → inject → persist → emit result.
 async fn run_transcription(state: &AppState, app: &AppHandle) -> Result<()> {
+    // Reload config from disk so changes made in the admin window (engine, Groq
+    // key, language, enhancement) apply to the running app without a restart.
+    if let Ok(fresh) = crate::config::AppConfig::load_direct() {
+        state.lock().await.config = fresh;
+    }
+
     let (samples, config) = {
         let guard = state.lock().await;
         let samples = guard.audio_samples.clone().ok_or(AppError::NotRecording)?;

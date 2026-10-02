@@ -117,6 +117,7 @@ pub fn setup_tray(app: &mut App, config: &AppConfig) -> tauri::Result<()> {
         true,
         None::<&str>,
     )?;
+    let admin_item = MenuItem::with_id(app, "open_admin", "Réglages…", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quitter SuperParler", true, None::<&str>)?;
 
     let sep1 = PredefinedMenuItem::separator(app)?;
@@ -133,6 +134,7 @@ pub fn setup_tray(app: &mut App, config: &AppConfig) -> tauri::Result<()> {
             &engine_item,
             &autostart_item,
             &sep2,
+            &admin_item,
             &paste_key,
             &sep3,
             &quit,
@@ -206,6 +208,19 @@ fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
         "quit" => {
             tracing::info!("user quit via tray menu");
             std::process::exit(0);
+        }
+
+        "open_admin" => {
+            // Launch the native egui admin window as a separate process
+            // (`SuperParler.exe --admin`) — keeps the tray app WebView-free.
+            match std::env::current_exe() {
+                Ok(exe) => {
+                    if let Err(e) = std::process::Command::new(exe).arg("--admin").spawn() {
+                        tracing::error!("failed to launch admin window: {e}");
+                    }
+                }
+                Err(e) => tracing::error!("current_exe failed: {e}"),
+            }
         }
 
         "toggle" => {

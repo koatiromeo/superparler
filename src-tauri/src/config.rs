@@ -70,13 +70,21 @@ impl Default for AppConfig {
 }
 
 impl AppConfig {
-    pub fn config_path(_app: &AppHandle) -> Option<PathBuf> {
+    /// Config file path, with no `AppHandle` needed (the path is derived purely
+    /// from `ProjectDirs`). Usable from the standalone admin process.
+    pub fn path_direct() -> Option<PathBuf> {
         ProjectDirs::from("com", "nemaleu", "superparler")
             .map(|dirs| dirs.config_dir().join("config.toml"))
     }
 
-    pub fn load(app: &AppHandle) -> Result<Self> {
-        let path = Self::config_path(app)
+    pub fn config_path(_app: &AppHandle) -> Option<PathBuf> {
+        Self::path_direct()
+    }
+
+    /// Load from disk with no `AppHandle` (shared config.toml is the single
+    /// source of truth between the tray app and the admin process).
+    pub fn load_direct() -> Result<Self> {
+        let path = Self::path_direct()
             .ok_or_else(|| AppError::Config("cannot determine config dir".to_string()))?;
         if !path.exists() {
             return Ok(Self::default());
@@ -86,13 +94,22 @@ impl AppConfig {
         toml::from_str(&content).map_err(|e| AppError::Config(e.to_string()))
     }
 
-    pub fn save(&self, app: &AppHandle) -> Result<()> {
-        let path = Self::config_path(app)
+    pub fn load(_app: &AppHandle) -> Result<Self> {
+        Self::load_direct()
+    }
+
+    /// Save to disk with no `AppHandle`.
+    pub fn save_direct(&self) -> Result<()> {
+        let path = Self::path_direct()
             .ok_or_else(|| AppError::Config("cannot determine config dir".to_string()))?;
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(|e| AppError::Config(e.to_string()))?;
         }
         let content = toml::to_string_pretty(self).map_err(|e| AppError::Config(e.to_string()))?;
         std::fs::write(&path, content).map_err(|e| AppError::Config(e.to_string()))
+    }
+
+    pub fn save(&self, _app: &AppHandle) -> Result<()> {
+        self.save_direct()
     }
 }

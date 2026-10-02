@@ -10,9 +10,6 @@ pub const EVT_ENGINE_CHANGED: &str = "engine:changed";
 pub const EVT_MODEL_DOWNLOAD_PROGRESS: &str = "model:download:progress";
 pub const EVT_MODEL_DOWNLOAD_DONE: &str = "model:download:done";
 pub const EVT_MODEL_DOWNLOAD_ERROR: &str = "model:download:error";
-/// Drives the floating "pill" overlay. Payload is a state string:
-/// "recording" | "transcribing" | "hide". Consumed by the overlay webview.
-pub const EVT_OVERLAY_STATE: &str = "overlay:state";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

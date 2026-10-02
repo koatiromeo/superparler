@@ -2,7 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "SuperParler default capabilities — desktop (all platforms)",
-  "windows": ["main", "overlay"],
+  "windows": ["main"],
   "permissions": [
     "core:default",
     "core:event:default",
@@ -19,8 +19,6 @@
     "autostart:allow-disable",
     "autostart:allow-is-enabled",
     "notification:default",
-    "notification:allow-show",
-    "core:window:allow-set-ignore-cursor-events",
-    "core:window:allow-set-position"
+    "notification:allow-show"
   ]
 }
